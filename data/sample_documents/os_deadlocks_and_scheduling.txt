@@ -1,0 +1,32 @@
+# Operating Systems — Chapter 7: Deadlocks and Process Synchronization
+
+## Subject: Computer Science and Engineering
+## Chapter: 7 - Deadlocks
+## Target Audience: Undergraduate Operating Systems Students
+
+### 1. The Deadlock Problem
+In a multiprogramming environment, several processes may compete for a finite number of resources. A process requests resources; if the resources are not available at that time, the process enters a waiting state. Sometimes, a waiting process is never again able to change state, because the resources it has requested are held by other waiting processes. This situation is called a deadlock.
+
+### 2. Four Necessary Conditions for Deadlock
+A deadlock situation can arise if and only if the following four conditions hold simultaneously in a system:
+1. Mutual Exclusion: At least one resource must be held in a nonshareable mode; that is, only one process at a time can use the resource. If another process requests that resource, the requesting process must be delayed until the resource has been released.
+2. Hold and Wait: A process must be holding at least one resource and waiting to acquire additional resources that are currently being held by other processes.
+3. No Preemption: Resources cannot be preempted; that is, a resource can be released only voluntarily by the process holding it, after that process has completed its task.
+4. Circular Wait: A closed chain of processes exists such that each process holds at least one resource needed by the next process in the chain. For example, process P0 is waiting for a resource held by P1, P1 is waiting for a resource held by P2, and Pn is waiting for a resource held by P0.
+
+### 3. Deadlock Handling Methods
+Generally, we can deal with the deadlock problem in one of three ways:
+1. Use a protocol to prevent or avoid deadlocks, ensuring that the system will never enter a deadlocked state.
+2. Allow the system to enter a deadlocked state, detect it, and recover.
+3. Ignore the problem altogether and pretend that deadlocks never occur in the system (the ostrich algorithm, commonly adopted by Unix and Windows).
+
+### 4. Deadlock Prevention vs. Avoidance
+Deadlock prevention provides a set of methods to ensure that at least one of the four necessary conditions cannot hold. By constraining how requests for resources are made, we prevent deadlocks.
+Deadlock avoidance requires that the operating system be given additional information in advance concerning which resources a process will request and use during its lifetime. With this additional knowledge, the system can decide for each request whether or not the process should wait to avoid a future possible deadlock.
+
+### 5. Banker's Algorithm
+The Banker's Algorithm is a classic deadlock-avoidance algorithm developed by Edsger Dijkstra. It is applicable to resource allocation systems with multiple instances of each resource type.
+When a new process enters the system, it must declare the maximum number of instances of each resource type that it may need. This number cannot exceed the total number of resources in the system.
+When a process requests an available set of resources, the system must determine whether allocating them leaves the system in a safe state.
+A state is safe if the system can allocate resources to each process (up to its maximum) in some order and still avoid a deadlock. More formally, a system is in a safe state only if there exists a safe sequence <P1, P2, ..., Pn> of processes.
+If no safe sequence exists, the system is in an unsafe state. An unsafe state is not necessarily a deadlock, but every deadlock state is unsafe. The Banker's Algorithm ensures that the system will never enter an unsafe state.
