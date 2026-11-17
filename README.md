@@ -681,3 +681,4 @@ The planned live evaluation and viva demonstration follows an uninterrupted user
 - **Multimodal Visual Reasoning:** Direct question-answering over textbook diagrams, charts, and architectural schematics.
 - **Native Mobile Apps:** Offline-first iOS and Android companion applications for flashcard spaced repetition.
 - **LMS Interoperability (LTI):** Direct synchronization with Canvas, Moodle, and Google Classroom.
+

@@ -30,3 +30,4 @@ When a new process enters the system, it must declare the maximum number of inst
 When a process requests an available set of resources, the system must determine whether allocating them leaves the system in a safe state.
 A state is safe if the system can allocate resources to each process (up to its maximum) in some order and still avoid a deadlock. More formally, a system is in a safe state only if there exists a safe sequence <P1, P2, ..., Pn> of processes.
 If no safe sequence exists, the system is in an unsafe state. An unsafe state is not necessarily a deadlock, but every deadlock state is unsafe. The Banker's Algorithm ensures that the system will never enter an unsafe state.
+
