@@ -1,5 +1,5 @@
 """
-Workspace Sanity and Architecture Validation Test for EduGen AI (Week 1).
+Workspace Sanity and Architecture Validation Test for Cognivora AI (Week 1).
 Validates that the project directory structure, mandatory documentation files,
 environment configurations, and architectural specifications are properly initialized.
 """
@@ -131,7 +131,7 @@ def test_env_example_keys():
 
 
 if __name__ == "__main__":
-    print("\nRunning EduGen AI Week 1 Workspace Sanity Checks...")
+    print("\nRunning Cognivora AI Week 1 Workspace Sanity Checks...")
     try:
         test_directory_structure()
         test_mandatory_files()

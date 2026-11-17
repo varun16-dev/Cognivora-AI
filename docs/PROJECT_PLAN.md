@@ -1,16 +1,16 @@
-# EduGen AI — Master Project Plan & Architecture Specification
+# Cognivora AI — Master Project Plan & Architecture Specification
 **Track B (Advanced Track) Project Specification**  
 **Document Version:** 1.0.0 | **Date:** November 2026  
-**Project:** Educational Content Generator AI ("EduGen AI")  
+**Project:** Educational Content Generator AI ("Cognivora AI")  
 **Target Delivery Window:** 8-Week Accelerated Academic/Production Milestone  
 
 ---
 
 ## 1. Project Vision
 
-**EduGen AI** is an intelligent, agentic personalized learning platform designed to transform static, passive educational materials (such as university textbooks, lecture syllabi, lecture slides, and personal course notes) into an active, adaptive, multimodal study companion.
+**Cognivora AI** is an intelligent, agentic personalized learning platform designed to transform static, passive educational materials (such as university textbooks, lecture syllabi, lecture slides, and personal course notes) into an active, adaptive, multimodal study companion.
 
-Unlike conventional "PDF-to-chatbot" or naive "PDF-to-quiz" wrappers that merely pass entire text blocks to a single prompt, EduGen AI implements a **multi-tool agent orchestration architecture** operating over a robust **Retrieval-Augmented Generation (RAG)** pipeline. The platform empowers students to:
+Unlike conventional "PDF-to-chatbot" or naive "PDF-to-quiz" wrappers that merely pass entire text blocks to a single prompt, Cognivora AI implements a **multi-tool agent orchestration architecture** operating over a robust **Retrieval-Augmented Generation (RAG)** pipeline. The platform empowers students to:
 - Deeply understand complex curricular concepts grounded strictly in their uploaded course syllabi.
 - Engage in interactive multi-turn conceptual inquiry via text and voice.
 - Generate structured, multi-difficulty assessment materials (quizzes, flashcards, conceptual summaries).
@@ -31,7 +31,7 @@ Modern learners face four critical bottlenecks when working with high-volume tec
 3. **Static, Non-Adaptive Question Banks:** Existing quiz tools generate one-off static multiple-choice questions without tracking past failures, resulting in questions that are either trivially simple or inappropriately frustrating.
 4. **Disjointed Learning Tools:** Students are forced to juggle disconnected tools: one for PDF reading, another for flashcard spaced repetition (Anki), another for AI summaries, and another for auditory learning, with zero unified analytics tracking conceptual mastery.
 
-**EduGen AI** solves this by uniting contextual semantic document processing, agentic tool orchestration, grounded retrieval, dynamic student skill modeling, and multimodal presentation into a single, cohesive educational workspace.
+**Cognivora AI** solves this by uniting contextual semantic document processing, agentic tool orchestration, grounded retrieval, dynamic student skill modeling, and multimodal presentation into a single, cohesive educational workspace.
 
 ---
 
@@ -113,7 +113,7 @@ The project's success is evaluated across technical, pedagogical, and user-exper
 
 ## 6. Track B (Advanced Track) Differentiating Requirements
 
-As an **Advanced Track (Track B)** project, EduGen AI goes beyond standard single-prompt LLM wrappers through five core architectural pillars:
+As an **Advanced Track (Track B)** project, Cognivora AI goes beyond standard single-prompt LLM wrappers through five core architectural pillars:
 
 1. **Autonomous Tool Selection & Routing:** A centralized AI Orchestrator receives raw student intent, determines required tool calls (e.g., distinguishing between a general conceptual question, a request for a targeted quiz, or an analytics diagnosis), executes tools with structured arguments, validates outputs, and synthesizes answers.
 2. **Strict RAG with Verifiable Source Citations:** Ingestion includes semantic chunking with overlap, metadata enrichment, embedding storage, reciprocal-rank fusion/hybrid retrieval, and mandatory attribution down to the document page number.
@@ -287,7 +287,7 @@ flowchart TD
 
 ## 10. Adaptive Learning Engine Algorithm
 
-The EduGen Adaptive Engine updates a dynamic Bayesian/Exponentially Weighted Moving Average (EWMA) model of the learner's mastery for every distinct concept node.
+The Cognivora Adaptive Engine updates a dynamic Bayesian/Exponentially Weighted Moving Average (EWMA) model of the learner's mastery for every distinct concept node.
 
 ```mermaid
 flowchart TD
@@ -431,7 +431,7 @@ erDiagram
 
 ## 12. Frontend & Visual Design System
 
-### 12.1 Visual Identity: "EduGen AI"
+### 12.1 Visual Identity: "Cognivora AI"
 - **Design Philosophy:** Minimalist, academic, focused, and high-clarity. Zero distracting clutter, zero decorative pseudo-charts.
 - **Color Tokens:**
   - *Primary / Accent:* Deep Indigo (`#4F46E5` / Tailwind `indigo-600`) — represents intellect and focus.
@@ -557,7 +557,7 @@ flowchart LR
 
 ```mermaid
 gantt
-    title EduGen AI — 8-Week Development Lifecycle
+    title Cognivora AI — 8-Week Development Lifecycle
     dateFormat  YYYY-MM-DD
     section Week 1
     Project Plan, Roles, Architecture & Repo Setup   :active, w1, 2026-11-17, 7d
@@ -642,7 +642,7 @@ gantt
 
 ```mermaid
 flowchart TD
-    subgraph Team ["EduGen AI Engineering Core"]
+    subgraph Team ["Cognivora AI Engineering Core"]
         Varun["VARUN D<br/>Lead AI/ML & Agent Architect"]
         Sindhuja["SINDHUJA S<br/>Lead Frontend & UI/UX Engineer"]
         Mohith["MOHITH S<br/>Lead Backend & Platform Engineer"]

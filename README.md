@@ -1,4 +1,4 @@
-# Educational Content Generator AI (EduGen AI)
+# Educational Content Generator AI (Cognivora AI)
 
 [![Track](https://img.shields.io/badge/Track-Advanced%20Track%20(Track%20B)-blueviolet.svg)](https://github.com)
 [![Architecture](https://img.shields.io/badge/Architecture-Agentic%20AI%20%7C%20RAG-indigo.svg)](https://github.com)
@@ -6,7 +6,7 @@
 [![Frontend](https://img.shields.io/badge/Frontend-Next.js%2014%20%7C%20React%20%7C%20TypeScript-black.svg)](https://nextjs.org)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
-> **EduGen AI** is a portfolio-grade, production-oriented Agentic AI educational platform. It transforms raw academic materials (PDFs, DOCX, lecture notes) into an active, adaptive, multimodal learning ecosystem powered by autonomous tool orchestration, strict RAG grounding, an algorithmic learner skill model, and interactive voice Q&A.
+> **Cognivora AI** is a portfolio-grade, production-oriented Agentic AI educational platform. It transforms raw academic materials (PDFs, DOCX, lecture notes) into an active, adaptive, multimodal learning ecosystem powered by autonomous tool orchestration, strict RAG grounding, an algorithmic learner skill model, and interactive voice Q&A.
 
 ---
 
@@ -46,10 +46,10 @@
 
 Modern academic study materials—such as university syllabi, dense engineering textbooks, slide decks, and exam revision packets—remain overwhelmingly static. Students typically consume them passively, guessing which concepts they understand until an exam exposes their weaknesses.
 
-**EduGen AI** replaces static reading with an active, closed-loop educational workflow:
+**Cognivora AI** replaces static reading with an active, closed-loop educational workflow:
 $$\mathbf{UPLOAD} \longrightarrow \mathbf{UNDERSTAND} \longrightarrow \mathbf{LEARN} \longrightarrow \mathbf{PRACTICE} \longrightarrow \mathbf{ANALYZE} \longrightarrow \mathbf{ADAPT}$$
 
-By treating uploaded curriculum documents as the single source of truth, EduGen AI orchestrates specialized tools to parse concept hierarchies, ground student question-answering with exact page citations, generate calibrated multi-format quizzes, create spaced-repetition flashcards, produce spoken audio overviews, and continuously recalculate topic-level mastery.
+By treating uploaded curriculum documents as the single source of truth, Cognivora AI orchestrates specialized tools to parse concept hierarchies, ground student question-answering with exact page citations, generate calibrated multi-format quizzes, create spaced-repetition flashcards, produce spoken audio overviews, and continuously recalculate topic-level mastery.
 
 ---
 
@@ -64,7 +64,7 @@ By treating uploaded curriculum documents as the single source of truth, EduGen 
 
 ## Proposed Solution
 
-EduGen AI addresses these challenges with a cohesive full-stack agentic architecture:
+Cognivora AI addresses these challenges with a cohesive full-stack agentic architecture:
 - **Autonomous Agentic Router:** Decouples user intent from hardcoded scripts, routing requests intelligently to specialized tools.
 - **Strict RAG Pipeline:** Employs semantic chunking, metadata pre-filtering, and similarity thresholds to eliminate hallucinations and attribute answers to specific document pages.
 - **Dynamic Learner Model:** Uses an Exponentially Weighted Moving Average (EWMA) to adjust question difficulty and topic distributions based on actual student performance.
@@ -85,7 +85,7 @@ EduGen AI addresses these challenges with a cohesive full-stack agentic architec
 
 ## System Architecture
 
-EduGen AI is engineered with a clean separation of concerns across its presentation, API gateway, orchestration, and persistence layers.
+Cognivora AI is engineered with a clean separation of concerns across its presentation, API gateway, orchestration, and persistence layers.
 
 ```mermaid
 flowchart TD
@@ -145,7 +145,7 @@ flowchart TD
 
 ## Agent Architecture & Tool Selection
 
-EduGen AI avoids hardcoded single-prompt chains. It employs an autonomous **Orchestrator Agent** that parses natural language requests, reasons over available capabilities in the **Tool Registry**, executes targeted operations, and validates outputs against strict Pydantic schemas.
+Cognivora AI avoids hardcoded single-prompt chains. It employs an autonomous **Orchestrator Agent** that parses natural language requests, reasons over available capabilities in the **Tool Registry**, executes targeted operations, and validates outputs against strict Pydantic schemas.
 
 ```mermaid
 flowchart TD
@@ -236,7 +236,7 @@ flowchart TD
 
 ## Adaptive Learning Engine
 
-Rather than assigning static difficulty tags, EduGen AI models student understanding at the individual topic and subtopic level.
+Rather than assigning static difficulty tags, Cognivora AI models student understanding at the individual topic and subtopic level.
 
 ```mermaid
 flowchart TD
@@ -276,7 +276,7 @@ The analytics engine turns raw quiz logs into actionable educational visualizati
 
 ## Voice Q&A
 
-EduGen AI supports a complete multimodal voice loop designed specifically for auditory learners:
+Cognivora AI supports a complete multimodal voice loop designed specifically for auditory learners:
 
 ```mermaid
 flowchart LR
@@ -328,7 +328,7 @@ flowchart TD
 
 ## Database Architecture
 
-EduGen AI pairs an ACID-compliant relational schema in PostgreSQL with a vector store for semantic embeddings.
+Cognivora AI pairs an ACID-compliant relational schema in PostgreSQL with a vector store for semantic embeddings.
 
 ```mermaid
 erDiagram
@@ -525,7 +525,7 @@ Ensure your `.env` contains the required credentials:
 ```env
 ENVIRONMENT=development
 SECRET_KEY=your_secret_key_here
-DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5432/edugen_ai
+DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5432/cognivora_ai
 OPENAI_API_KEY=your_openai_key
 GEMINI_API_KEY=your_gemini_key
 GROQ_API_KEY=your_groq_key
@@ -570,7 +570,7 @@ Frontend web application will be accessible at: `http://localhost:3000`.
 
 ## Testing
 
-EduGen AI includes comprehensive automated testing across unit, integration, and RAG evaluation tiers:
+Cognivora AI includes comprehensive automated testing across unit, integration, and RAG evaluation tiers:
 
 ```bash
 # Run backend unit and integration test suite
@@ -604,7 +604,7 @@ python tests/test_workspace_sanity.py
 
 ```
 +-----------------------------------------------------------------------------------+
-|  EduGen AI                [Search Topics...]            (Streak: 🔥 5) [Profile]  |
+|  Cognivora AI             [Search Topics...]            (Streak: 🔥 5) [Profile]  |
 +-----------------------------------------------------------------------------------+
 |  DASHBOARD                                                                        |
 |  Overall Mastery: [████████████░░░░] 74%       Study Time: 14.2 hrs               |
