@@ -1,9 +1,29 @@
 @import "tailwindcss";
+@import "katex/dist/katex.min.css";
 
 @layer base {
   body {
     @apply bg-slate-50 text-slate-900 font-sans antialiased;
   }
+}
+
+/* Responsive KaTeX Math Expressions */
+.katex-display {
+  overflow-x: auto;
+  overflow-y: hidden;
+  max-width: 100%;
+  padding: 0.5rem 0.25rem;
+  margin: 0.75rem 0 !important;
+  scrollbar-width: thin;
+}
+
+.katex {
+  font-size: 1.05em;
+  text-rendering: auto;
+}
+
+.katex-display > .katex {
+  white-space: nowrap;
 }
 
 /* Custom flip card 3D styles */

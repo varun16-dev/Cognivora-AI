@@ -1,6 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import remarkMath from 'remark-math';
+import rehypeKatex from 'rehype-katex';
+import 'katex/dist/katex.min.css';
 import {
   Send,
   Bot,
@@ -200,7 +203,7 @@ export default function StudyChat() {
   };
 
   return (
-    <div className="flex flex-col h-[calc(100vh-8rem)] max-w-5xl mx-auto bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
+    <div className="flex flex-col h-[calc(100vh-8rem)] w-full max-w-5xl mx-auto bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
       {/* Top Controls Bar */}
       <div className="p-4 bg-slate-50 border-b border-slate-200/80 flex flex-wrap items-center justify-between gap-3">
         {/* Pedagogical Mode Select */}
@@ -230,7 +233,7 @@ export default function StudyChat() {
           <select
             value={selectedDocId}
             onChange={(e) => setSelectedDocId(e.target.value)}
-            className="bg-white border border-slate-300 rounded-lg px-2.5 py-1 text-xs text-slate-700 font-medium focus:ring-1 focus:ring-violet-500 focus:outline-hidden"
+            className="bg-white border border-slate-300 rounded-lg px-2.5 py-1 text-xs text-slate-700 font-medium focus:ring-1 focus:ring-violet-500 focus:outline-hidden max-w-[170px] sm:max-w-xs truncate"
           >
             <option value="">All Uploaded Documents</option>
             {documents.map((d) => (
@@ -243,11 +246,11 @@ export default function StudyChat() {
       </div>
 
       {/* Message Stream */}
-      <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6">
+      <div className="flex-1 overflow-y-auto overflow-x-hidden p-4 sm:p-6 space-y-6 w-full min-w-0">
         {messages.map((msg, i) => (
           <div
             key={i}
-            className={`flex gap-3 sm:gap-4 ${
+            className={`flex gap-3 sm:gap-4 w-full min-w-0 ${
               msg.role === 'user' ? 'justify-end' : 'justify-start'
             }`}
           >
@@ -258,7 +261,7 @@ export default function StudyChat() {
             )}
 
             <div
-              className={`max-w-[85%] sm:max-w-2xl rounded-2xl p-4 sm:p-5 shadow-xs text-sm leading-relaxed ${
+              className={`max-w-[88%] sm:max-w-2xl min-w-0 w-auto rounded-2xl p-4 sm:p-5 shadow-xs text-sm leading-relaxed overflow-hidden break-words ${
                 msg.role === 'user'
                   ? 'bg-violet-600 text-white rounded-br-none'
                   : 'bg-slate-50/90 border border-slate-200/80 text-slate-800 rounded-bl-none'
@@ -274,35 +277,59 @@ export default function StudyChat() {
 
               {/* Message Body */}
               {msg.role === 'user' ? (
-                <div className="whitespace-pre-wrap text-sm leading-relaxed">{msg.content}</div>
+                <div className="whitespace-pre-wrap text-sm leading-relaxed break-words">{msg.content}</div>
               ) : (
-                <div className="text-slate-800 leading-relaxed text-sm">
+                <div className="text-slate-800 leading-relaxed text-sm min-w-0 w-full overflow-hidden">
                   <ReactMarkdown
-                    remarkPlugins={[remarkGfm]}
+                    remarkPlugins={[remarkGfm, remarkMath]}
+                    rehypePlugins={[rehypeKatex]}
                     components={{
-                      h1: ({node, ...props}) => <h1 className="text-base font-bold text-slate-900 border-b border-slate-200/80 pb-1 mt-3 mb-2" {...props} />,
-                      h2: ({node, ...props}) => <h2 className="text-sm font-bold text-slate-900 mt-2.5 mb-1.5 flex items-center gap-1.5" {...props} />,
-                      h3: ({node, ...props}) => <h3 className="text-xs font-bold uppercase tracking-wider text-violet-800 mt-2 mb-1" {...props} />,
-                      p: ({node, ...props}) => <p className="mb-2 last:mb-0 leading-relaxed" {...props} />,
-                      ul: ({node, ...props}) => <ul className="list-disc list-inside space-y-1 my-2 text-slate-700 pl-1" {...props} />,
-                      ol: ({node, ...props}) => <ol className="list-decimal list-inside space-y-1 my-2 text-slate-700 pl-1" {...props} />,
-                      li: ({node, ...props}) => <li className="leading-relaxed" {...props} />,
+                      h1: ({node, ...props}) => <h1 className="text-base font-bold text-slate-900 border-b border-slate-200/80 pb-1 mt-3.5 mb-2 break-words" {...props} />,
+                      h2: ({node, ...props}) => <h2 className="text-sm font-bold text-slate-900 mt-3 mb-1.5 flex items-center gap-1.5 break-words" {...props} />,
+                      h3: ({node, ...props}) => <h3 className="text-xs font-bold uppercase tracking-wider text-violet-800 mt-2.5 mb-1 break-words" {...props} />,
+                      p: ({node, ...props}) => <p className="mb-2 last:mb-0 leading-relaxed break-words" {...props} />,
+                      ul: ({node, ...props}) => <ul className="list-disc list-inside space-y-1 my-2 text-slate-700 pl-1 break-words" {...props} />,
+                      ol: ({node, ...props}) => <ol className="list-decimal list-inside space-y-1 my-2 text-slate-700 pl-1 break-words" {...props} />,
+                      li: ({node, ...props}) => <li className="leading-relaxed break-words" {...props} />,
                       strong: ({node, ...props}) => <strong className="font-semibold text-slate-900" {...props} />,
                       em: ({node, ...props}) => <em className="italic text-slate-700" {...props} />,
-                      blockquote: ({node, ...props}) => <blockquote className="border-l-4 border-violet-400 pl-3 py-1 my-2 bg-violet-50/60 rounded-r text-xs text-slate-600 italic" {...props} />,
-                      code: ({node, inline, className, children, ...props}) => {
-                        if (inline) {
-                          return <code className="px-1.5 py-0.5 rounded bg-slate-200/80 text-violet-800 font-mono text-xs" {...props}>{children}</code>;
+                      blockquote: ({node, ...props}) => <blockquote className="border-l-4 border-violet-400 pl-3 py-1.5 my-2 bg-violet-50/70 rounded-r text-xs text-slate-600 italic break-words" {...props} />,
+                      pre: ({node, children, ...props}) => (
+                        <div className="my-2.5 rounded-xl bg-slate-900 text-slate-100 p-3.5 text-xs font-mono overflow-x-auto max-w-full shadow-inner border border-slate-800">
+                          <pre className="overflow-x-auto" {...props}>{children}</pre>
+                        </div>
+                      ),
+                      code: ({node, className, children, ...props}) => {
+                        const textContent = String(children || '');
+                        const hasNewline = textContent.includes('\n');
+                        const isLang = /language-(\w+)/.test(className || '');
+
+                        // Full-width dark code blocks only for genuine multiline code or language-tagged blocks
+                        if (hasNewline || isLang) {
+                          return (
+                            <code className={`block font-mono text-xs leading-relaxed whitespace-pre ${className || ''}`} {...props}>
+                              {children}
+                            </code>
+                          );
                         }
+
+                        // Compact inline badge styling for single letters (a, D, t, W) and short phrases
                         return (
-                          <div className="my-2 rounded-lg bg-slate-900 text-slate-100 p-3 text-xs font-mono overflow-x-auto shadow-inner">
-                            <code {...props}>{children}</code>
-                          </div>
+                          <code
+                            className="px-1.5 py-0.5 mx-0.5 rounded-md bg-slate-200/90 text-violet-800 font-mono text-xs font-medium border border-slate-300/60 inline align-baseline break-all"
+                            {...props}
+                          >
+                            {children}
+                          </code>
                         );
                       },
-                      table: ({node, ...props}) => <div className="overflow-x-auto my-2 border border-slate-200 rounded-lg"><table className="min-w-full divide-y divide-slate-200 text-xs text-left" {...props} /></div>,
-                      th: ({node, ...props}) => <th className="px-2.5 py-1.5 font-semibold text-slate-800 bg-slate-100" {...props} />,
-                      td: ({node, ...props}) => <td className="px-2.5 py-1.5 border-t border-slate-100 text-slate-700" {...props} />
+                      table: ({node, ...props}) => (
+                        <div className="overflow-x-auto max-w-full my-3 border border-slate-200/90 rounded-xl shadow-2xs">
+                          <table className="min-w-full divide-y divide-slate-200 text-xs text-left" {...props} />
+                        </div>
+                      ),
+                      th: ({node, ...props}) => <th className="px-3 py-2 font-semibold text-slate-800 bg-slate-100/90 whitespace-nowrap text-xs" {...props} />,
+                      td: ({node, ...props}) => <td className="px-3 py-2 border-t border-slate-100 text-slate-700 text-xs break-words" {...props} />
                     }}
                   >
                     {msg.content}
@@ -317,19 +344,19 @@ export default function StudyChat() {
                     <ShieldCheck className="w-4 h-4 text-emerald-600" />
                     <span>Grounded Sources ({msg.citations.length} Verified References):</span>
                   </p>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 min-w-0">
                     {msg.citations.map((c, idx) => (
                       <div
                         key={idx}
-                        className="p-2.5 rounded-lg bg-white border border-slate-200 text-xs text-slate-700 space-y-1 shadow-2xs"
+                        className="p-2.5 rounded-lg bg-white border border-slate-200 text-xs text-slate-700 space-y-1 shadow-2xs min-w-0 overflow-hidden"
                       >
-                        <div className="flex items-center justify-between font-semibold text-slate-900">
-                          <span className="truncate max-w-[140px]">{c.document_name}</span>
-                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-violet-50 text-violet-700">
+                        <div className="flex items-center justify-between font-semibold text-slate-900 gap-2">
+                          <span className="truncate max-w-[130px] sm:max-w-[150px]">{c.document_name}</span>
+                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-violet-50 text-violet-700 shrink-0">
                             Page {c.page_number}
                           </span>
                         </div>
-                        <p className="text-[11px] text-slate-500 line-clamp-2 italic">
+                        <p className="text-[11px] text-slate-500 line-clamp-2 italic break-words">
                           "{c.excerpt}"
                         </p>
                         <div className="text-[10px] text-slate-400 text-right">
