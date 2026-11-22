@@ -26,7 +26,7 @@ export default function Flashcards() {
 
   // New deck form
   const [selectedDocId, setSelectedDocId] = useState('');
-  const [topic, setTopic] = useState('Deadlocks & Banker\'s Algorithm');
+  const [topic, setTopic] = useState('');
   const [cardCount, setCardCount] = useState(6);
   const [error, setError] = useState(null);
 
@@ -39,6 +39,10 @@ export default function Flashcards() {
       setDocuments(docs);
       if (docs.length > 0 && !selectedDocId) {
         setSelectedDocId(docs[0].id);
+        const docTopic = (docs[0].topics && docs[0].topics.length > 0 && docs[0].topics[0] !== 'General')
+          ? docs[0].topics[0]
+          : (docs[0].subject || 'Core Concepts');
+        setTopic(docTopic);
       }
       setDecks(deckList);
       if (deckList.length > 0 && !activeDeck) {
@@ -142,7 +146,17 @@ export default function Flashcards() {
               <label className="block text-xs font-bold text-slate-600 mb-1">Document</label>
               <select
                 value={selectedDocId}
-                onChange={(e) => setSelectedDocId(e.target.value)}
+                onChange={(e) => {
+                  const docId = e.target.value;
+                  setSelectedDocId(docId);
+                  const d = documents.find((doc) => doc.id === docId);
+                  if (d) {
+                    const docTopic = (d.topics && d.topics.length > 0 && d.topics[0] !== 'General')
+                      ? d.topics[0]
+                      : (d.subject || 'Core Concepts');
+                    setTopic(docTopic);
+                  }
+                }}
                 className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-800"
               >
                 {documents.map((d) => (

@@ -78,11 +78,17 @@ class GeminiService:
 
         user_content = f"### STUDENT QUESTION:\n{prompt}\n\n### RETRIEVED COURSE CONTEXT:\n{context_text}"
 
+        candidate_models = [self.model_name, "gemini-3.1-flash-lite", "gemini-3.5-flash-lite"]
+        seen_models = []
+        for m in candidate_models:
+            if m not in seen_models:
+                seen_models.append(m)
+
         if self.client:
-            for attempt in range(2):
+            for model_to_try in seen_models:
                 try:
                     response = self.client.models.generate_content(
-                        model=self.model_name,
+                        model=model_to_try,
                         contents=user_content,
                         config=types.GenerateContentConfig(
                             system_instruction=system_instruction,
@@ -91,16 +97,14 @@ class GeminiService:
                     )
                     return {
                         "answer": response.text,
-                        "model_used": self.model_name,
+                        "model_used": model_to_try,
                         "is_demo_mode": False
                     }
                 except Exception as e:
                     err_str = str(e)
-                    if "503" in err_str and attempt == 0:
-                        logger.warning("Gemini 503 demand spike, retrying after 1s...")
-                        time.sleep(1.2)
+                    logger.warning(f"Gemini API model '{model_to_try}' failed: {err_str[:120]}. Trying fallback model if available.")
+                    if "429" in err_str or "503" in err_str or "NOT_FOUND" in err_str:
                         continue
-                    logger.error(f"Gemini API call failed: {e}. Falling back to curriculum engine.")
                     break
 
         # Fallback Demonstration / Offline Engine
@@ -115,29 +119,40 @@ class GeminiService:
         """
         Calls Gemini with JSON mime-type enforcement for quizzes, flashcards, or summaries.
         """
+        candidate_models = [self.model_name, "gemini-3.1-flash-lite", "gemini-3.5-flash-lite"]
+        seen_models = []
+        for m in candidate_models:
+            if m not in seen_models:
+                seen_models.append(m)
+
         if self.client:
-            try:
-                response = self.client.models.generate_content(
-                    model=self.model_name,
-                    contents=prompt,
-                    config=types.GenerateContentConfig(
-                        system_instruction=system_instruction,
-                        response_mime_type="application/json",
-                        temperature=0.3,
+            for model_to_try in seen_models:
+                try:
+                    response = self.client.models.generate_content(
+                        model=model_to_try,
+                        contents=prompt,
+                        config=types.GenerateContentConfig(
+                            system_instruction=system_instruction,
+                            response_mime_type="application/json",
+                            temperature=0.3,
+                        )
                     )
-                )
-                text = response.text.strip()
-                # Clean possible markdown json code blocks
-                if text.startswith("```json"):
-                    text = text[7:]
-                if text.startswith("```"):
-                    text = text[3:]
-                if text.endswith("```"):
-                    text = text[:-3]
-                parsed = json.loads(text.strip())
-                return {"data": parsed, "model_used": self.model_name, "is_demo_mode": False}
-            except Exception as e:
-                logger.error(f"Gemini structured JSON failed: {e}. Falling back to curriculum generator.")
+                    text = response.text.strip()
+                    # Clean possible markdown json code blocks
+                    if text.startswith("```json"):
+                        text = text[7:]
+                    if text.startswith("```"):
+                        text = text[3:]
+                    if text.endswith("```"):
+                        text = text[:-3]
+                    parsed = json.loads(text.strip())
+                    return {"data": parsed, "model_used": model_to_try, "is_demo_mode": False}
+                except Exception as e:
+                    err_str = str(e)
+                    logger.warning(f"Gemini structured JSON on '{model_to_try}' failed: {err_str[:120]}. Trying alternative model.")
+                    if "429" in err_str or "503" in err_str or "NOT_FOUND" in err_str:
+                        continue
+                    break
 
         return {"data": None, "model_used": "Built-in Educational Engine", "is_demo_mode": True}
 

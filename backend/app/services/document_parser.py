@@ -108,32 +108,73 @@ class DocumentParser:
     @staticmethod
     def extract_topics_and_subject(pages: List[Dict[str, Any]]) -> Tuple[str, List[str]]:
         """
-        Extracts subject and syllabus topics from document headings.
+        Extracts subject and syllabus topics from document headings and curriculum keywords.
         """
         all_text = "\n".join([p["text"] for p in pages])
         subject = "General Studies"
         topics = []
 
-        # Check for Subject header
-        subj_match = re.search(r"##?\s*(?:Subject|Course):\s*([^\n\r]+)", all_text, re.IGNORECASE)
+        # 1. Check for Subject/Course header
+        subj_match = re.search(r"(?:^|\n)\s*#{0,3}\s*(?:Subject|Course):\s*([^\n\r]+)", all_text, re.IGNORECASE)
         if subj_match:
             subject = subj_match.group(1).strip()
+        else:
+            first_line = all_text.strip().split("\n")[0]
+            clean_title = re.sub(r"^[#\s\-\*]+", "", first_line).strip()
+            if "—" in clean_title:
+                subject = clean_title.split("—")[0].strip()
+            elif ":" in clean_title and len(clean_title.split(":")[0]) <= 35:
+                subject = clean_title.split(":")[0].strip()
 
-        # Check for Chapter or Section headers
-        headings = re.findall(
-            r"(?:###?|\d+\.|\bChapter\s+\d+:|\bUnit\s+\d+:|\bSection\s+\d+:)\s*([A-Za-z0-9\s,\-\(\)\'\"]{4,80})",
-            all_text
+        # 2. Extract topics from headings (Markdown #, ##, ###, Chapter/Unit/Module, numbered items)
+        raw_headings = re.findall(
+            r"(?:^|\n)\s*(?:#{1,4}|\b(?:Chapter|Unit|Module|Section)\s*(?:\d+)?[:\.\-]?|\d+\.)\s*([^\n\r]{3,90})",
+            all_text,
+            re.IGNORECASE
         )
-        for h in headings:
+
+        ignore_labels = {
+            "subject", "course", "target audience", "table of contents",
+            "page", "notes", "author", "instructor", "professor", "chapter",
+            "unit", "module", "section", "lecture notes", "references"
+        }
+
+        for h in raw_headings:
             cleaned = h.strip()
-            # Filter non-topic lines
-            if cleaned and not cleaned.lower().startswith(("the", "in a", "when", "table of contents", "page", "note")):
-                if cleaned not in topics and len(cleaned) > 3:
-                    topics.append(cleaned)
+            cleaned = re.sub(r"^[#\-\*\•\d\.\s:]+", "", cleaned).strip()
+            cleaned = re.sub(r"^(?:Chapter|Unit|Module|Section)\s*(?:\d+)?[:\.\-]?\s*", "", cleaned, flags=re.IGNORECASE).strip()
+
+            if ":" in cleaned:
+                prefix = cleaned.split(":", 1)[0].strip().lower()
+                if prefix in ignore_labels:
+                    cleaned = cleaned.split(":", 1)[1].strip()
+
+            lower = cleaned.lower()
+            if not cleaned or len(cleaned) < 3 or lower in ignore_labels:
+                continue
+
+            if lower.startswith(("the ", "in a ", "when ", "note:", "http", "www")):
+                continue
+
+            if cleaned not in topics and len(cleaned) <= 80:
+                topics.append(cleaned)
+
+        # 3. If fewer than 2 topics found from headings, extract key conceptual phrases
+        if len(topics) < 2:
+            concept_patterns = [
+                r"\b([A-Z][a-z]+(?:\s+[A-Z][a-z]+){1,3})\s+(?:is|are|algorithm|cipher|protocol|model|technique|method)\b",
+                r"\b(?:The|A)\s+([A-Za-z]+(?:\s+[A-Za-z]+){1,2})\s+(?:algorithm|cipher|technique|protocol|concept)\b"
+            ]
+            for pat in concept_patterns:
+                for match in re.findall(pat, all_text):
+                    m_clean = match.strip()
+                    if m_clean.lower() not in [t.lower() for t in topics] and m_clean.lower() not in ignore_labels:
+                        topics.append(m_clean)
+                    if len(topics) >= 6:
+                        break
 
         if not topics:
-            # Fallback default topics
-            topics = ["Introduction & Core Concepts", "Key Principles & Theories", "Methodologies & Algorithms", "Practical Applications & Summary"]
+            topics = [f"{subject} Fundamentals", f"{subject} Methodologies", f"{subject} Applications"]
 
         return subject, topics[:10]
 

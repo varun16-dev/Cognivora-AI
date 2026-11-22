@@ -41,8 +41,8 @@ class Settings(BaseSettings):
 
     # AI & Gemini Configuration
     GEMINI_API_KEY: str = os.getenv("GEMINI_API_KEY", "")
-    PRIMARY_MODEL: str = "gemini-3.5-flash"
-    FAST_GENERATION_MODEL: str = "gemini-3.5-flash"
+    PRIMARY_MODEL: str = "gemini-3.1-flash-lite"
+    FAST_GENERATION_MODEL: str = "gemini-3.1-flash-lite"
     EMBEDDING_MODEL: str = "gemini-embedding-001"
 
     # Upload constraints

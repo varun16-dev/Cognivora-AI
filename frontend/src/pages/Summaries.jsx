@@ -30,7 +30,7 @@ export default function Summaries() {
   const navigate = useNavigate();
   const [documents, setDocuments] = useState([]);
   const [selectedDocId, setSelectedDocId] = useState('');
-  const [topic, setTopic] = useState('Operating Systems Deadlocks');
+  const [topic, setTopic] = useState('');
   const [mode, setMode] = useState('detailed');
   const [summaries, setSummaries] = useState([]);
   const [activeSummary, setActiveSummary] = useState(null);
@@ -44,7 +44,10 @@ export default function Summaries() {
         setDocuments(docs);
         if (docs.length > 0) {
           setSelectedDocId(docs[0].id);
-          if (docs[0].topics && docs[0].topics.length > 0) setTopic(docs[0].topics[0]);
+          const initialTopic = (docs[0].topics && docs[0].topics.length > 0 && docs[0].topics[0] !== 'General')
+            ? docs[0].topics[0]
+            : (docs[0].subject || 'Core Concepts');
+          setTopic(initialTopic);
         }
       })
       .catch((err) => console.log('Error fetching docs for summaries:', err));
@@ -130,9 +133,15 @@ export default function Summaries() {
             <select
               value={selectedDocId}
               onChange={(e) => {
-                setSelectedDocId(e.target.value);
-                const doc = documents.find((d) => d.id === e.target.value);
-                if (doc && doc.topics?.length > 0) setTopic(doc.topics[0]);
+                const docId = e.target.value;
+                setSelectedDocId(docId);
+                const doc = documents.find((d) => d.id === docId);
+                if (doc) {
+                  const docTopic = (doc.topics && doc.topics.length > 0 && doc.topics[0] !== 'General')
+                    ? doc.topics[0]
+                    : (doc.subject || 'Core Concepts');
+                  setTopic(docTopic);
+                }
               }}
               className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-800"
             >

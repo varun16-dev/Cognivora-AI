@@ -211,3 +211,47 @@ def test_quiz_generation_invalid_document_returns_404():
     res = client.post("/api/quiz/generate", json=payload)
     assert res.status_code == 404
     assert "not found" in res.json()["detail"].lower()
+
+
+def test_repeated_cross_document_isolation(setup_two_documents):
+    """
+    Verify that alternating quiz generation across documents (Doc A -> Doc B -> Doc A)
+    never carries over stale state, cached questions, or cross-document topics.
+    """
+    data = setup_two_documents
+    crypto_id = data["crypto_id"]
+    os_id = data["os_id"]
+
+    # 1. Generate for Data Security
+    res1 = client.post("/api/quiz/generate", json={
+        "document_id": crypto_id,
+        "topic": "Classical Encryption Techniques",
+        "question_count": 3
+    })
+    assert res1.status_code == 201
+    q1 = res1.json()
+    assert all("deadlock" not in q["question"].lower() for q in q1["questions"])
+
+    # 2. Generate for Operating Systems
+    res2 = client.post("/api/quiz/generate", json={
+        "document_id": os_id,
+        "topic": "Process Synchronization",
+        "question_count": 3
+    })
+    assert res2.status_code == 201
+    q2 = res2.json()
+    assert all("cipher" not in q["question"].lower() for q in q2["questions"])
+
+    # 3. Generate NEW quiz for Data Security again - must remain 100% security content
+    res3 = client.post("/api/quiz/generate", json={
+        "document_id": crypto_id,
+        "topic": "Classical Encryption Techniques",
+        "question_count": 3
+    })
+    assert res3.status_code == 201
+    q3 = res3.json()
+    assert all("deadlock" not in q["question"].lower() for q in q3["questions"])
+    assert all("banker" not in q["question"].lower() for q in q3["questions"])
+    assert all("ostrich" not in q["question"].lower() for q in q3["questions"])
+    assert all("Operating_Systems" not in q.get("citation", "") for q in q3["questions"])
+
