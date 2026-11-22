@@ -1,0 +1,24 @@
+{
+  "name": "cognivora-ai",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Educational Content Generator AI Agent — Capabl Hackathon Track A",
+  "scripts": {
+    "frontend:dev": "cd frontend && npm run dev",
+    "frontend:build": "cd frontend && npm run build",
+    "backend:dev": "uvicorn backend.app.main:app --reload --port 8000",
+    "backend:test": "pytest tests/test_backend_api.py -v",
+    "test:sanity": "python tests/test_workspace_sanity.py"
+  },
+  "keywords": [
+    "agentic-ai",
+    "educational-ai",
+    "rag",
+    "gemini",
+    "fastapi",
+    "react",
+    "chromadb"
+  ],
+  "author": "Varun D, Sindhuja S, Mohith S",
+  "license": "MIT"
+}
