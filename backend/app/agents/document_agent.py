@@ -2,7 +2,7 @@ import os
 import json
 import uuid
 import logging
-from typing import List, Dict, Any, Tuple
+from typing import List, Dict, Any, Tuple,Optional
 from sqlalchemy.orm import Session
 from app.services.document_parser import DocumentParser
 from app.services.rag_engine import rag_engine
