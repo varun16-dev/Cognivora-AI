@@ -10,7 +10,6 @@ import {
   Volume2,
   TrendingUp,
   Cpu,
-  Flame,
   ExternalLink,
   Menu,
   X
@@ -110,47 +109,16 @@ export default function Layout() {
 
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-        {/* Top Header */}
-        <header className="h-16 bg-white border-b border-slate-200/80 flex items-center justify-between px-4 sm:px-6 z-10">
+        {/* Top Header (Mobile only navigation toggle) */}
+        <header className="md:hidden h-14 bg-white border-b border-slate-200/80 flex items-center justify-between px-4 z-10">
           <div className="flex items-center gap-3">
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="md:hidden p-2 rounded-lg text-slate-600 hover:bg-slate-100"
+              className="p-2 rounded-lg text-slate-600 hover:bg-slate-100"
             >
               {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
             </button>
-            <div className="hidden sm:block">
-              <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-violet-50 text-violet-700 border border-violet-100">
-                Track A — Capabl Educational AI Agent
-              </span>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-4">
-            {/* Streak Badge */}
-            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-amber-50 border border-amber-200/80 text-amber-800 text-xs font-semibold shadow-xs">
-              <Flame className="w-4 h-4 text-amber-500 fill-amber-500" />
-              <span>5 Day Streak</span>
-            </div>
-
-            {/* Model Badge */}
-            <div className="hidden lg:flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-100 border border-slate-200 text-xs text-slate-700 font-medium">
-              <Cpu className="w-3.5 h-3.5 text-violet-600" />
-              <span className="font-semibold text-slate-900">Gemini 2.5 Flash</span>
-              <span className="text-slate-400">|</span>
-              <span className="text-slate-600">RAG Grounded</span>
-            </div>
-
-            {/* Team Avatar */}
-            <div className="flex items-center gap-2 pl-2 border-l border-slate-200">
-              <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-violet-600 to-indigo-600 text-white flex items-center justify-center font-bold text-xs shadow-xs">
-                VD
-              </div>
-              <div className="hidden xl:block text-left">
-                <p className="text-xs font-bold text-slate-800 leading-none">Varun D</p>
-                <p className="text-[10px] text-slate-400">Team Lead</p>
-              </div>
-            </div>
+            <span className="font-bold text-sm text-slate-800">Cognivora AI</span>
           </div>
         </header>
 
