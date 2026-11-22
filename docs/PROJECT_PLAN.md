@@ -1,5 +1,5 @@
 # Cognivora AI — Master Project Plan & Architecture Specification
-**Track B (Advanced Track) Project Specification**  
+**Track A (Essential Track — Enhanced with React.js Dashboard)**  
 **Document Version:** 1.0.0 | **Date:** November 2026  
 **Project:** Educational Content Generator AI ("Cognivora AI")  
 **Target Delivery Window:** 8-Week Accelerated Academic/Production Milestone  
@@ -62,7 +62,7 @@ The project's success is evaluated across technical, pedagogical, and user-exper
 4. **Structured Schema Integrity:**
    - $100\%$ of tool outputs conform to strict Pydantic validation schemas, with automated self-correction preventing UI crashes.
 5. **Portfolio & Demonstration Quality:**
-   - Polished, responsive Next.js 14 interface free of visual clutter or generic template artifacts.
+   - Polished, responsive React.js (Vite + Tailwind CSS) interface free of visual clutter or generic template artifacts.
    - Successful execution of the full live demo script (Upload $\rightarrow$ Q&A $\rightarrow$ Diagnostic Quiz $\rightarrow$ Mistake Analysis $\rightarrow$ Adaptive Recalibration $\rightarrow$ Audio Lesson).
 
 ---
@@ -111,15 +111,15 @@ The project's success is evaluated across technical, pedagogical, and user-exper
 
 ---
 
-## 6. Track B (Advanced Track) Differentiating Requirements
+## 6. Track Comparison: Selected Track A (with React.js Frontend Enhancement) vs Track B
 
-As an **Advanced Track (Track B)** project, Cognivora AI goes beyond standard single-prompt LLM wrappers through five core architectural pillars:
+Cognivora AI implements **Track A (Essential Track)** enhanced with a production-grade React.js frontend (rather than Streamlit), while evaluating Track B multimedia requirements:
 
-1. **Autonomous Tool Selection & Routing:** A centralized AI Orchestrator receives raw student intent, determines required tool calls (e.g., distinguishing between a general conceptual question, a request for a targeted quiz, or an analytics diagnosis), executes tools with structured arguments, validates outputs, and synthesizes answers.
-2. **Strict RAG with Verifiable Source Citations:** Ingestion includes semantic chunking with overlap, metadata enrichment, embedding storage, reciprocal-rank fusion/hybrid retrieval, and mandatory attribution down to the document page number.
-3. **Algorithmic Adaptive Learning Engine:** A deterministic-plus-probabilistic learner model that maintains an evolving topic-mastery graph, shifting difficulty and topic distributions based on historical performance.
-4. **Voice Q&A Pipeline:** Full conversational voice loop integrating client audio capture, Speech-to-Text (STT), agent reasoning over RAG, and synchronized Text-to-Speech (TTS) playback with full text fallback.
-5. **Production-Grade Full-Stack Architecture:** Decoupled FastAPI backend with asynchronous endpoints, PostgreSQL relational storage with Alembic migrations, vector database persistence, and a type-safe Next.js (TypeScript + Tailwind CSS) frontend.
+1. **Autonomous Tool Selection & Routing:** A centralized Coordinator Agent receives student intent, determines required LangChain tool calls (distinguishing between conceptual Q&A, quiz generation, flashcard decks, multi-mode summaries, and analytics), executes tools with structured arguments, and logs telemetry.
+2. **Strict RAG with Verifiable Source Citations:** Ingestion includes semantic chunking with overlap, metadata enrichment, ChromaDB vector storage, and mandatory attribution down to the document page number, with strict anti-hallucination guardrails.
+3. **Algorithmic Adaptive Learning Engine:** A deterministic learner model that maintains an evolving topic-mastery graph (EWMA), flagging weak topics (<60%) and recommending focused interventions.
+4. **Browser Audio Learning Lab:** Multimodal learning integrating browser Web Speech API for synchronized lesson listening with speed and voice customization.
+5. **Production-Grade Full-Stack Architecture:** Decoupled FastAPI backend with asynchronous endpoints, SQLite relational persistence with SQLAlchemy models, ChromaDB vector store, and a responsive React.js (Vite + Tailwind CSS + Recharts) frontend.
 
 ---
 
@@ -127,39 +127,39 @@ As an **Advanced Track (Track B)** project, Cognivora AI goes beyond standard si
 
 ```mermaid
 flowchart TD
-    subgraph Client ["Frontend Layer (Next.js 14 + Tailwind CSS)"]
+    subgraph Client ["Frontend Layer (React.js + Vite + Tailwind CSS)"]
         UI["Student Dashboard & Chat Interface"]
-        VoiceIO["Voice Recording & Audio Player"]
-        AnalyticsViz["Mastery Heatmap & Charts"]
+        VoiceIO["Web Speech API Player & Audio Visualizer"]
+        AnalyticsViz["Recharts Mastery & Score Charts"]
     end
 
-    subgraph Gateway ["API & Security Gateway (FastAPI)"]
-        Auth["JWT Authentication & RBAC"]
-        RateLimit["Rate Limiter & Input Validator"]
-        Router["API Route Controllers"]
+    subgraph Gateway ["API & Application Gateway (FastAPI)"]
+        Auth["CORS Middleware & Session Management"]
+        RateLimit["File Validator & Input Sanitizer"]
+        Router["API Route Controllers (/api)"]
     end
 
-    subgraph AgenticCore ["AI Orchestration Layer"]
-        Orchestrator["Agent / Tool Router"]
-        ToolRegistry["Tool Registry & Execution Engine"]
-        Guardrails["Output Validator & Schema Enforcer"]
+    subgraph AgenticCore ["AI Orchestration Layer (LangChain + Coordinator)"]
+        Orchestrator["Coordinator Agent (Intent Classifier)"]
+        ToolRegistry["LangChain Educational Tool Registry"]
+        Guardrails["Pydantic v2 Schema Enforcer & Grounding Guardrail"]
     end
 
-    subgraph Tools ["Specialized Educational Tools"]
-        T1["Content Understanding Tool"]
-        T2["RAG Retrieval Tool"]
-        T3["Quiz Generation Tool"]
-        T4["Flashcard Generation Tool"]
-        T5["Smart Summary Tool"]
-        T6["Audio / TTS Tool"]
-        T7["Adaptive Engine Tool"]
-        T8["Analytics Tool"]
+    subgraph Tools ["Specialized Educational Agents & Tools"]
+        T1["Document Agent (PyMuPDF & Chunker)"]
+        T2["RAG Retrieval Tool (ChromaDB Vector Search)"]
+        T3["Quiz Agent (Calibrated Assessment)"]
+        T4["Flashcard Agent (3D Active Recall)"]
+        T5["Summary Agent (5 Pedagogical Modes)"]
+        T6["Web Speech TTS Lab"]
+        T7["Adaptive Engine (EWMA Skill Modeling)"]
+        T8["Study Analytics Service"]
     end
 
-    subgraph Storage ["Data & Model Storage"]
-        VectorDB[("Vector DB (ChromaDB / pgvector)")]
-        Postgres[("Relational DB (PostgreSQL)")]
-        FileStore[("Document Storage (Local / S3)")]
+    subgraph Storage ["Data & Storage Layer"]
+        VectorDB[("Vector Storage (ChromaDB Persistent)")]
+        SQLiteDB[("Relational Database (SQLite)")]
+        FileStore[("Uploaded Academic Files (data/uploads)")]
     end
 
     subgraph Models ["LLM & Embedding Foundation"]
@@ -189,14 +189,14 @@ The agent orchestrator operates on a ReAct (Reasoning + Acting) / Tool-Calling p
 sequenceDiagram
     autonumber
     actor User as Student
-    participant UI as Next.js Frontend
+    participant UI as React Frontend
     participant API as FastAPI Backend
-    participant Agent as AI Orchestrator
-    participant RAG as RAG Retrieval Tool
-    participant VDB as Vector Store
-    participant Tool as Educational Tool
-    participant LLM as Foundation Model
-    participant Guard as Schema Guardrail
+    participant Agent as Coordinator Agent
+    participant RAG as LangChain RAG Tool
+    participant VDB as ChromaDB Vector Store
+    participant Tool as Specialized Educational Agent
+    participant LLM as Google Gemini 2.5 Flash
+    participant Guard as Pydantic Schema Guardrail
 
     User->>UI: "Give me a hard 5-question quiz on Deadlocks from Chapter 3"
     UI->>API: POST /api/v1/agent/chat (user_id, session_id, message)
@@ -250,7 +250,7 @@ flowchart TD
     subgraph EmbeddingStorage ["2. Vectorization & Indexing"]
         Chunking --> Embedder["Embedding Generation (text-embedding-004)"]
         Embedder --> VectorDB[("Vector DB (ChromaDB / pgvector)")]
-        Metadata -.->|Document Hierarchy| RelationalDB[("PostgreSQL Metadata")]
+        Metadata -.->|Document Hierarchy| RelationalDB[("SQLite Database")]
     end
 
     subgraph Retrieval ["3. Retrieval & Synthesis"]
@@ -323,7 +323,7 @@ Where:
 
 ---
 
-## 11. Relational Database Schema (PostgreSQL)
+## 11. Relational Database Schema (SQLite via SQLAlchemy)
 
 ```mermaid
 erDiagram
@@ -546,10 +546,10 @@ flowchart LR
 
 ## 16. Deployment Strategy
 
-- **Backend Service:** Containerized FastAPI application running via Uvicorn within Docker, deployable to Render, Railway, or AWS ECS.
-- **Database & Storage:** Managed PostgreSQL instance (Supabase or AWS RDS) with persistent local or S3 object storage for uploaded files.
-- **Vector Database:** Local persistent ChromaDB volume (development/MVP) with seamless configuration switch to `pgvector` in PostgreSQL for production.
-- **Frontend Application:** Deployed seamlessly on Vercel with automated continuous deployment from the GitHub main branch.
+- **Backend Service:** Asynchronous FastAPI application running via Uvicorn, deployable to Render with blueprint configuration (`render.yaml`).
+- **Database & Storage:** Local persistent SQLite instance with persistent mounted volume on Render for uploaded files and databases.
+- **Vector Database:** Local persistent ChromaDB volume with FastCurriculumEmbedder and Gemini embedding capabilities.
+- **Frontend Application:** Deployed on Vercel with SPA routing rewrite (`vercel.json`) and automated continuous deployment from the GitHub main branch.
 
 ---
 
@@ -568,9 +568,9 @@ gantt
     section Week 4
     End-to-End Agent, Voice Q&A & System Design      :w4, after w3, 7d
     section Week 5
-    Next.js UI Foundation, Multi-Agent & Dashboard   :w5, after w4, 7d
+    React UI Foundation, Multi-Agent & Dashboard     :w5, after w4, 7d
     section Week 6
-    FastAPI Endpoints, Auth, DB Migrations & APIs    :w6, after w5, 7d
+    FastAPI Endpoints, SQLite Persistence & APIs     :w6, after w5, 7d
     section Week 7
     Full Integration, E2E Testing, Guardrails & Evals:w7, after w6, 7d
     section Week 8
@@ -607,34 +607,30 @@ gantt
 - Integrate Edge-TTS for high-quality audio summary generation with playback metadata.
 - Implement comprehensive agent execution logging and telemetry.
 
-#### **WEEK 5: Next.js Frontend Foundation & UI/UX Experience**
-- Initialize Next.js 14 (App Router) with TypeScript and Tailwind CSS.
-- Build design system tokens, typography, dark/light theme, and layout components.
+#### **WEEK 5: React Frontend Foundation & UI/UX Experience**
+- Initialize React 19 (Vite) with Tailwind CSS, Lucide icons, and Recharts.
+- Build design system tokens, typography, Navy Blue/Violet theme, and responsive layout.
 - Develop interactive Student Dashboard (Mastery overview, streak counter, action cards).
-- Develop Document Management interface with upload progress and syllabus tree viewer.
-- Develop AI Study Assistant chat component with source pill citations.
+- Develop Document Management interface with upload progress and syllabus hierarchy inspector.
+- Develop AI Study Assistant chat component with source citations and Agent Decision Inspector.
 
-#### **WEEK 6: Full Backend APIs, Authentication & Database Persistence**
-- Complete FastAPI endpoints for auth, documents, agent chat, quizzes, flashcards, summaries, and audio.
-- Implement JWT authentication, password hashing, and user document isolation.
-- Configure PostgreSQL database with Alembic migration scripts.
+#### **WEEK 6: Full Backend APIs, SQLite Persistence & Endpoint Docs**
+- Complete FastAPI endpoints for documents, agent chat, quizzes, flashcards, summaries, audio, and analytics.
+- Configure SQLite database with SQLAlchemy ORM models (`DocumentModel`, `QuizModel`, `QuizAttemptModel`, etc.).
 - Implement session persistence, quiz attempt history logging, and telemetry.
-- Publish interactive Swagger / OpenAPI documentation (`docs/API.md`).
+- Publish interactive Swagger / OpenAPI documentation (`/docs`).
 
 #### **WEEK 7: Closed-Loop Adaptive Learning, Testing & Quality Guardrails**
-- Implement dynamic Adaptive Learning Engine (`docs/ADAPTIVE_LEARNING.md`) connecting quiz failure analytics to subsequent quiz parameters.
-- Build Student Analytics Dashboard with mastery heatmaps and topic radar charts.
-- Implement automated Pydantic schema validation guardrails with self-healing retry logic.
-- Execute edge-case testing suite (corrupt files, out-of-scope questions, rate-limit fallbacks).
-- Optimize end-to-end latency (streaming tokens, retrieval caching).
+- Implement dynamic Adaptive Learning Engine connecting quiz failure analytics to subsequent quiz parameters.
+- Build Student Analytics Dashboard with EWMA mastery charts and weak topic diagnosis.
+- Implement automated Pydantic schema validation guardrails with anti-hallucination grounding.
+- Execute automated pytest test suite (`tests/test_backend_api.py`) verifying all 11 use cases and edge cases.
 
 #### **WEEK 8: Production Deployment, Demo Video & Final Presentation**
-- Deploy backend service and PostgreSQL database to production cloud hosting.
-- Deploy frontend application to Vercel with live environment configuration.
-- Record high-impact 3–5 minute end-to-end video walkthrough showcasing:
-  * Document upload $\rightarrow$ Topic extraction $\rightarrow$ Grounded Q&A $\rightarrow$ Quiz generation $\rightarrow$ Intentional failure $\rightarrow$ Adaptive quiz auto-generation $\rightarrow$ Audio summary.
-- Complete Final Requirements Audit (`docs/FINAL_REQUIREMENTS_AUDIT.md`) and Known Limitations report (`docs/KNOWN_LIMITATIONS.md`).
-- Finalize slide deck and project documentation for technical viva defense.
+- Deploy backend service to Render with persistent disk storage blueprint (`render.yaml`).
+- Deploy frontend application to Vercel with SPA routing rewrite (`vercel.json`).
+- Record high-impact 3–5 minute end-to-end video walkthrough.
+- Complete final slide deck and project documentation for technical viva defense.
 
 ---
 
@@ -653,24 +649,24 @@ flowchart TD
     Varun -->|Owns| A3["Adaptive Learning Mathematical Engine"]
     Varun -->|Owns| A4["Model Evaluation & Anti-Hallucination"]
 
-    Sindhuja -->|Owns| F1["Next.js 14 App & TypeScript Architecture"]
+    Sindhuja -->|Owns| F1["React.js, Vite & Tailwind CSS Architecture"]
     Sindhuja -->|Owns| F2["Visual Design System & Component Library"]
     Sindhuja -->|Owns| F3["Interactive Quiz, Flashcard & Audio UI"]
-    Sindhuja -->|Owns| F4["Analytics Visualizations & Mastery Heatmaps"]
+    Sindhuja -->|Owns| F4["Analytics Visualizations & Mastery Charts (Recharts)"]
 
     Mohith -->|Owns| B1["FastAPI Application & Async Services"]
-    Mohith -->|Owns| B2["PostgreSQL Schema, Migrations & ORM"]
-    Mohith -->|Owns| B3["Authentication, Security & Rate Limiting"]
-    Mohith -->|Owns| B4["Containerization, CI/CD & Cloud Deployment"]
+    Mohith -->|Owns| B2["SQLite Database Schema & SQLAlchemy ORM"]
+    Mohith -->|Owns| B3["Document Parsing (PyMuPDF & python-docx)"]
+    Mohith -->|Owns| B4["Automated Pytest Suite & Cloud Deployment"]
 ```
 
 ### Detailed Ownership Breakdown
 
 | Team Member | Core Focus Areas | Specific Primary Deliverables | Cross-Functional Overlap |
 | :--- | :--- | :--- | :--- |
-| **Varun D** | AI/ML Architecture & Agent Engineering | • AI Orchestrator & Tool Registry<br/>• Semantic chunking & RAG retrieval engine<br/>• Model benchmarking (`docs/MODEL_COMPARISON.md`)<br/>• Adaptive learning algorithm (`docs/ADAPTIVE_LEARNING.md`)<br/>• Output validation guardrails & retry logic | Collaborates with Mohith on API tool schemas; collaborates with Sindhuja on streaming chat and citation rendering. |
-| **Sindhuja S** | Frontend Engineering & UI/UX Design | • Next.js 14 App Router + Tailwind setup<br/>• Design tokens, dark/light theme, typography<br/>• Student Dashboard & Topic Heatmap<br/>• Quiz Runner, Flashcard Deck & Audio Player UI<br/>• Responsive mobile/tablet/desktop layouts | Collaborates with Varun on voice audio controls and interactive quiz states; collaborates with Mohith on API client integration. |
-| **Mohith S** | Backend Architecture & Infrastructure | • FastAPI project structure & dependency injection<br/>• PostgreSQL schema, models, and Alembic migrations<br/>• JWT Auth, file upload streaming, and security<br/>• REST API controllers (`docs/API.md`)<br/>• Docker containerization and cloud deployment | Collaborates with Varun on vector store persistence; collaborates with Sindhuja on endpoint contracts and error payloads. |
+| **Varun D** | Team Lead & AI Integration | • Coordinator Agent & LangChain tool dispatch<br/>• Semantic chunking & RAG retrieval engine<br/>• Model benchmarking<br/>• Adaptive learning algorithm (EWMA)<br/>• Output validation guardrails & retry logic | Collaborates with Mohith on API schemas; collaborates with Sindhuja on chat and citation rendering. |
+| **Sindhuja S** | Frontend Engineering & UI/UX Design | • React 19 + Vite + Tailwind setup<br/>• Design tokens, Navy/Violet theme, typography<br/>• Student Dashboard & Recharts visualizations<br/>• Quiz Runner, 3D Flashcard Deck & Audio Player UI<br/>• Responsive mobile/tablet/desktop layouts | Collaborates with Varun on audio controls and interactive quiz states; collaborates with Mohith on API client integration. |
+| **Mohith S** | Backend Architecture & Database | • FastAPI project structure & dependency injection<br/>• SQLite schema, SQLAlchemy models, and sessions<br/>• File upload handling and validation<br/>• REST API controllers<br/>• Automated pytest testing and cloud deployment | Collaborates with Varun on ChromaDB vector store persistence; collaborates with Sindhuja on endpoint contracts and error payloads. |
 
 ---
 
