@@ -525,10 +525,12 @@ To determine the most effective LLM for educational tutoring and assessment gene
 - [x] Automated test suite completed and verified (`pytest tests/test_backend_api.py`).
 
 ### Week 8: Production Deployment & Final Submission
-- [x] Deployment configurations created for Vercel (`vercel.json`) and Render (`render.yaml`).
+- [x] Deployment configurations created for Vercel (`frontend/vercel.json`) and Render (`render.yaml`).
 - [x] Persistence considerations for SQLite & ChromaDB on cloud platforms documented.
-- [x] 3–5 minute demonstration video presentation script prepared.
-- [x] Final viva defense presentation outline and documentation completed.
+- [x] 3–5 minute demonstration video recording guide and script prepared (`docs/DEMO_VIDEO_RECORDING_GUIDE.md`).
+- [x] Final viva defense PowerPoint presentation generated (`presentation/Cognivora_AI_Final_Presentation.pptx`).
+- [ ] Cloud service activation on Render & Vercel (pending user account login).
+- [ ] Final video recording submission (pending student screen capture).
 
 ---
 
@@ -611,7 +613,7 @@ Frontend web application will be accessible at: `http://localhost:3000`.
    PRIMARY_MODEL=gemini-2.5-flash
    ```
 3. **Security Rule:** Never commit your `.env` file to GitHub. The project `.gitignore` automatically excludes `.env`.
-4. **Demonstration Mode:** If `GEMINI_API_KEY` is omitted or quota is exceeded, Cognivora AI automatically activates its **Built-in Educational Engine**. All features (document parsing, RAG retrieval, quizzes, flashcards, summaries, audio, and analytics) remain 100% functional and interactive.
+4. **Demonstration Mode:** If `GEMINI_API_KEY` is omitted or quota is exceeded, Cognivora AI automatically activates its **Built-in Educational Engine**. All features (document parsing, RAG retrieval, quizzes, flashcards, summaries, audio, and analytics) remain fully operational and interactive for demonstration and testing.
 
 ---
 
@@ -623,8 +625,7 @@ Cognivora AI includes automated tests covering workspace sanity, API contracts, 
 # Run workspace sanity check
 python tests/test_workspace_sanity.py
 
-# Run comprehensive backend pytest suite
-$env:PYTHONPATH="backend"
+# Run comprehensive backend pytest suite (all 11 test modules)
 pytest tests/test_backend_api.py -v --tb=short
 ```
 
@@ -728,8 +729,9 @@ pytest tests/test_backend_api.py -v --tb=short
 - Fully operational Demonstration Mode ensuring 100% offline and test availability.
 
 ### Slide 5: Demonstrated Results & Verification
-- 7 automated backend integration tests passing with 100% success.
-- Production React frontend built in 2.3 seconds with Vite and Tailwind CSS.
+- 11 automated backend integration tests passing with 100% success.
+- Production React frontend built in 1.91s with Vite and Tailwind CSS.
+- Complete PowerPoint slide deck generated in `presentation/Cognivora_AI_Final_Presentation.pptx`.
 - Complete 8-week deliverable roadmap prepared and documented.
 
 ---
