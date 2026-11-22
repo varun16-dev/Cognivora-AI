@@ -1,4 +1,5 @@
 import os
+import json
 import uuid
 import logging
 from typing import List, Dict, Any, Tuple
@@ -58,7 +59,7 @@ class DocumentAgent:
                 file_size_bytes=file_size,
                 subject=subject,
                 chunk_count=indexed_count,
-                topics_json=str(topics),
+                topics_json=json.dumps(topics),
                 summary=f"Processed academic document containing {len(pages)} pages and {indexed_count} indexed chunks.",
                 processing_status="processed"
             )

@@ -20,7 +20,7 @@ import { api } from '../services/api';
 export default function QuizGenerator() {
   const [documents, setDocuments] = useState([]);
   const [selectedDocId, setSelectedDocId] = useState('');
-  const [topic, setTopic] = useState('Deadlocks and Process Synchronization');
+  const [topic, setTopic] = useState('');
   const [difficulty, setDifficulty] = useState('medium');
   const [questionCount, setQuestionCount] = useState(5);
   const [questionTypes, setQuestionTypes] = useState(['mcq', 'true_false']);
@@ -39,14 +39,29 @@ export default function QuizGenerator() {
       .then((docs) => {
         setDocuments(docs);
         if (docs.length > 0) {
-          setSelectedDocId(docs[0].id);
-          if (docs[0].topics && docs[0].topics.length > 0) {
-            setTopic(docs[0].topics[0]);
-          }
+          const firstDoc = docs[0];
+          setSelectedDocId(firstDoc.id);
+          const initialTopic = (firstDoc.topics && firstDoc.topics.length > 0 && firstDoc.topics[0] !== 'General')
+            ? firstDoc.topics[0]
+            : (firstDoc.subject || 'Core Concepts');
+          setTopic(initialTopic);
         }
       })
       .catch((err) => console.log('Could not load documents for quiz:', err));
   }, []);
+
+  const handleDocumentChange = (docId) => {
+    setSelectedDocId(docId);
+    const doc = documents.find((d) => d.id === docId);
+    if (doc) {
+      const docTopic = (doc.topics && doc.topics.length > 0 && doc.topics[0] !== 'General')
+        ? doc.topics[0]
+        : (doc.subject || 'Core Concepts');
+      setTopic(docTopic);
+    }
+  };
+
+  const currentDoc = documents.find((d) => d.id === selectedDocId);
 
   const handleGenerateQuiz = async () => {
     if (!selectedDocId) {
@@ -57,10 +72,13 @@ export default function QuizGenerator() {
     setLoading(true);
     setError(null);
 
+    const doc = documents.find((d) => d.id === selectedDocId);
+    const resolvedTopic = topic.trim() || (doc ? (doc.subject || 'Core Concepts') : 'Core Concepts');
+
     try {
       const res = await api.generateQuiz({
         document_id: selectedDocId,
-        topic,
+        topic: resolvedTopic,
         difficulty,
         question_count: Number(questionCount),
         question_types: questionTypes
@@ -153,11 +171,7 @@ export default function QuizGenerator() {
               </label>
               <select
                 value={selectedDocId}
-                onChange={(e) => {
-                  setSelectedDocId(e.target.value);
-                  const doc = documents.find((d) => d.id === e.target.value);
-                  if (doc && doc.topics?.length > 0) setTopic(doc.topics[0]);
-                }}
+                onChange={(e) => handleDocumentChange(e.target.value)}
                 className="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-2.5 text-sm text-slate-800 font-medium focus:ring-2 focus:ring-violet-500 focus:outline-hidden"
               >
                 {documents.length === 0 && <option value="">No documents uploaded yet</option>}
@@ -178,9 +192,28 @@ export default function QuizGenerator() {
                 type="text"
                 value={topic}
                 onChange={(e) => setTopic(e.target.value)}
-                placeholder="e.g. Banker's Algorithm, Deadlocks"
+                placeholder={currentDoc ? `e.g. ${currentDoc.subject || 'Core Concepts'}` : "e.g. Classical Encryption, Substitution Ciphers"}
                 className="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-2.5 text-sm text-slate-800 font-medium focus:ring-2 focus:ring-violet-500 focus:outline-hidden"
               />
+              {currentDoc && currentDoc.topics && currentDoc.topics.length > 0 && (
+                <div className="mt-2.5 flex flex-wrap gap-1.5 items-center">
+                  <span className="text-[11px] font-semibold text-slate-500">Document Topics:</span>
+                  {currentDoc.topics.slice(0, 5).map((t, idx) => (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={() => setTopic(t)}
+                      className={`text-[11px] px-2 py-0.5 rounded-md border transition ${
+                        topic === t
+                          ? 'bg-violet-100 text-violet-800 border-violet-300 font-semibold'
+                          : 'bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-200'
+                      }`}
+                    >
+                      {t}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* Difficulty Selector */}

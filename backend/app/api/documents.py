@@ -17,6 +17,25 @@ logger = logging.getLogger("CognivoraAI.DocumentsAPI")
 router = APIRouter(prefix="/documents", tags=["Documents"])
 
 
+def _safe_parse_topics(topics_json: Optional[str]) -> List[str]:
+    """Safely parses topics JSON array supporting standard JSON and legacy string formats."""
+    if not topics_json:
+        return []
+    try:
+        parsed = json.loads(topics_json)
+        if isinstance(parsed, list):
+            return parsed
+    except Exception:
+        pass
+    try:
+        parsed = json.loads(topics_json.replace("'", '"'))
+        if isinstance(parsed, list):
+            return parsed
+    except Exception:
+        pass
+    return ["General"]
+
+
 @router.post("/upload", response_model=DocumentResponse, status_code=status.HTTP_201_CREATED)
 async def upload_document(
     file: UploadFile = File(...),
@@ -70,7 +89,7 @@ async def upload_document(
             original_filename=file.filename,
             db=db
         )
-        topics = json.loads(doc_record.topics_json.replace("'", '"')) if doc_record.topics_json else []
+        topics = _safe_parse_topics(doc_record.topics_json)
         return DocumentResponse(
             id=doc_record.id,
             filename=doc_record.filename,
@@ -94,10 +113,7 @@ def list_documents(db: Session = Depends(get_db)):
     docs = db.query(DocumentModel).order_by(DocumentModel.upload_timestamp.desc()).all()
     results = []
     for d in docs:
-        try:
-            topics = json.loads(d.topics_json.replace("'", '"')) if d.topics_json else []
-        except Exception:
-            topics = ["General"]
+        topics = _safe_parse_topics(d.topics_json)
 
         results.append(DocumentResponse(
             id=d.id,
@@ -122,10 +138,7 @@ def get_document_hierarchy(document_id: str, db: Session = Depends(get_db)):
     if not doc:
         raise HTTPException(status_code=404, detail="Document not found.")
 
-    try:
-        topics = json.loads(doc.topics_json.replace("'", '"')) if doc.topics_json else []
-    except Exception:
-        topics = ["General Concepts"]
+    topics = _safe_parse_topics(doc.topics_json) or ["General Concepts"]
 
     hierarchy = [
         TopicHierarchy(name=t, level=1, subtopics=[f"{t} - Definitions", f"{t} - Practical Examples"])
@@ -150,12 +163,7 @@ def get_document_suggested_questions(document_id: str, db: Session = Depends(get
     if not doc:
         raise HTTPException(status_code=404, detail="Document not found.")
 
-    topics = []
-    try:
-        if doc.topics_json:
-            topics = json.loads(doc.topics_json.replace("'", '"'))
-    except Exception:
-        pass
+    topics = _safe_parse_topics(doc.topics_json)
 
     subject = (doc.subject or "").lower()
     filename = (doc.filename or "").lower()

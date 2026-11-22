@@ -25,11 +25,39 @@ def generate_quiz(
 ):
     """
     Invokes QuizAgent to generate a calibrated educational assessment
-    grounded in uploaded document context.
+    grounded exclusively in uploaded document context.
     """
     doc = db.query(DocumentModel).filter(DocumentModel.id == payload.document_id).first()
-    doc_name = doc.filename if doc else "Academic Curriculum"
-    topic = payload.topic or (doc.subject if doc else "General Concepts")
+    if not doc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Selected document with ID '{payload.document_id}' was not found."
+        )
+
+    doc_name = doc.filename
+    raw_topic = (payload.topic or "").strip()
+
+    # Safely load document topics
+    doc_topics = []
+    if doc.topics_json:
+        try:
+            doc_topics = json.loads(doc.topics_json)
+            if not isinstance(doc_topics, list):
+                doc_topics = []
+        except Exception:
+            try:
+                doc_topics = json.loads(doc.topics_json.replace("'", '"'))
+            except Exception:
+                doc_topics = []
+
+    # If topic is empty or generic, derive default from document metadata
+    if not raw_topic or raw_topic.lower() in ["general", "general concepts", "all topics", "default"]:
+        if doc_topics and doc_topics[0] != "General":
+            topic = doc_topics[0]
+        else:
+            topic = doc.subject or "Core Concepts"
+    else:
+        topic = raw_topic
 
     quiz_record = QuizAgent.generate_quiz(
         document_id=payload.document_id,

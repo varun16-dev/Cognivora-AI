@@ -79,7 +79,7 @@ class FlashcardAgent:
                         })
 
         if not cards:
-            cards = FlashcardAgent._generate_fallback_cards(topic, card_count)
+            cards = FlashcardAgent._generate_fallback_cards(chunks, topic, card_count, document_name)
 
         deck_id = str(uuid.uuid4())
         deck_record = FlashcardDeckModel(
@@ -99,50 +99,44 @@ class FlashcardAgent:
         return deck_record
 
     @staticmethod
-    def _generate_fallback_cards(topic: str, count: int) -> List[Dict[str, Any]]:
-        bank = [
-            {
-                "front": "What is a Deadlock in Operating Systems?",
-                "back": "A situation where a set of processes are permanently blocked because each process is holding a resource and waiting for another resource held by another process in the same set.",
-                "topic": "Deadlocks",
-                "difficulty": "easy"
-            },
-            {
-                "front": "What are the 4 Necessary Conditions for Deadlock?",
-                "back": "1. Mutual Exclusion\n2. Hold and Wait\n3. No Preemption\n4. Circular Wait\nAll four must hold simultaneously for a deadlock to exist.",
-                "topic": "Conditions",
-                "difficulty": "medium"
-            },
-            {
-                "front": "How does Deadlock Prevention differ from Deadlock Avoidance?",
-                "back": "Prevention eliminates at least one of the 4 necessary conditions before requests occur. Avoidance dynamically checks resource allocation requests using priori knowledge to ensure the system never leaves a safe state.",
-                "topic": "Prevention vs Avoidance",
-                "difficulty": "hard"
-            },
-            {
-                "front": "What is a 'Safe State' in Banker's Algorithm?",
-                "back": "A state where there exists a sequence <P1, P2, ..., Pn> such that each process can satisfy its maximum remaining resource requests using available resources plus resources held by prior processes.",
-                "topic": "Banker's Algorithm",
-                "difficulty": "medium"
-            },
-            {
-                "front": "What is the 'Ostrich Algorithm'?",
-                "back": "The strategy of ignoring the deadlock problem entirely, assuming deadlocks occur rarely and that the system recovery overhead is lower than continuous prevention algorithms.",
-                "topic": "Handling Strategies",
-                "difficulty": "easy"
-            },
-            {
-                "front": "What is a Resource Allocation Graph (RAG)?",
-                "back": "A directed graph with process nodes and resource nodes. Request edges go from Process -> Resource; Assignment edges go from Resource -> Process. A cycle indicates deadlock if single instance per resource.",
-                "topic": "Graph Modeling",
-                "difficulty": "hard"
-            }
-        ]
+    def _generate_fallback_cards(
+        chunks: List[Dict[str, Any]],
+        topic: str,
+        count: int,
+        document_name: str
+    ) -> List[Dict[str, Any]]:
+        """Dynamically generates active recall flashcards strictly from document chunks."""
+        import re
+        sentences = []
+        for c in chunks:
+            text = c.get("text", "")
+            raw = re.split(r"(?<=[.!?])\s+|\n{2,}", text)
+            for s in raw:
+                s = s.strip()
+                if 30 <= len(s) <= 200 and not s.startswith(("#", "-", "*", "http")):
+                    sentences.append((s, c.get("page_number", 1)))
 
         results = []
         for i in range(count):
-            item = bank[i % len(bank)].copy()
-            item["id"] = i + 1
-            item["mastery_status"] = "learning"
-            results.append(item)
+            if sentences:
+                sent, page = sentences[i % len(sentences)]
+                words = re.findall(r"\b[A-Za-z]{4,}\b", sent)
+                key_term = words[0] if words else topic
+                results.append({
+                    "id": i + 1,
+                    "front": f"What does '{document_name}' state regarding {key_term} (Page {page})?",
+                    "back": sent,
+                    "topic": topic,
+                    "difficulty": "medium",
+                    "mastery_status": "learning"
+                })
+            else:
+                results.append({
+                    "id": i + 1,
+                    "front": f"Core concept of {topic} in {document_name}",
+                    "back": f"Refer to {document_name} course notes for detailed mechanisms and definitions.",
+                    "topic": topic,
+                    "difficulty": "easy",
+                    "mastery_status": "learning"
+                })
         return results

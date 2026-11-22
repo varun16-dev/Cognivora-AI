@@ -78,8 +78,12 @@ class CoordinatorAgent:
             if intent == "quiz":
                 decision_rationale = "Student requested assessment practice. Selected and executed LangChain 'quiz_generator_tool'."
                 tools_called = ["quiz_generator_tool"]
+                
+                # Derive topic dynamically from document or student query
+                quiz_topic = doc_record.subject if (doc_record and doc_record.subject) else "Core Concepts"
+
                 tool_res_raw = quiz_generator_tool.invoke({
-                    "topic": "Deadlocks & Scheduling",
+                    "topic": quiz_topic,
                     "difficulty": "medium",
                     "question_count": 5,
                     "document_id": document_id

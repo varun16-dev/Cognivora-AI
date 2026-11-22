@@ -188,6 +188,54 @@ class RAGEngine:
 
         return len(ids)
 
+    def get_document_chunks(
+        self,
+        document_id: str,
+        limit: int = 10
+    ) -> List[Dict[str, Any]]:
+        """
+        Retrieves chunks belonging strictly to the specified document_id,
+        guaranteeing zero cross-document contamination.
+        """
+        chunks = []
+        # 1. Fetch from ChromaDB if available
+        if self.collection:
+            try:
+                res = self.collection.get(
+                    where={"document_id": document_id},
+                    limit=limit
+                )
+                if res and res.get("documents"):
+                    docs = res["documents"]
+                    metas = res.get("metadatas", [{}] * len(docs))
+                    for idx, (doc_text, meta) in enumerate(zip(docs, metas)):
+                        chunks.append({
+                            "text": doc_text,
+                            "document_id": meta.get("document_id", document_id),
+                            "document_name": meta.get("document_name", "Academic Note"),
+                            "page_number": int(meta.get("page_number", 1)),
+                            "chunk_index": int(meta.get("chunk_index", idx)),
+                            "similarity_score": 1.0
+                        })
+                    if chunks:
+                        return chunks
+            except Exception as e:
+                logger.warning(f"Error fetching document chunks from ChromaDB for {document_id}: {e}")
+
+        # 2. Check in-memory chunks
+        if document_id in self._memory_chunks:
+            for idx, c in enumerate(self._memory_chunks[document_id][:limit]):
+                chunks.append({
+                    "text": c["text"],
+                    "document_id": c.get("document_id", document_id),
+                    "document_name": c.get("document_name", "Academic Note"),
+                    "page_number": int(c.get("page_number", 1)),
+                    "chunk_index": int(c.get("chunk_index", idx)),
+                    "similarity_score": 1.0
+                })
+
+        return chunks
+
     def retrieve_relevant_chunks(
         self,
         query: str,
@@ -197,7 +245,10 @@ class RAGEngine:
     ) -> List[Dict[str, Any]]:
         """
         Retrieves top-k semantically relevant chunks with similarity scores and page metadata.
+        Strictly isolates retrieval to document_id if provided.
         """
+        effective_threshold = 0.05 if document_id else similarity_threshold
+
         if self.collection:
             try:
                 query_vec = self.embedder([query])
@@ -217,10 +268,15 @@ class RAGEngine:
                     for doc_text, meta, dist in zip(docs, metas, distances):
                         # Cosine distance to similarity: sim = 1.0 - (dist / 2.0)
                         sim_score = max(0.0, min(1.0, 1.0 - float(dist or 0.2)))
-                        if sim_score >= similarity_threshold:
+                        # Ensure chunk belongs strictly to requested document_id
+                        chunk_doc_id = meta.get("document_id", "")
+                        if document_id and chunk_doc_id != document_id:
+                            continue
+
+                        if sim_score >= effective_threshold:
                             retrieved.append({
                                 "text": doc_text,
-                                "document_id": meta.get("document_id", document_id or ""),
+                                "document_id": chunk_doc_id or document_id or "",
                                 "document_name": meta.get("document_name", "Academic Note"),
                                 "page_number": meta.get("page_number", 1),
                                 "chunk_index": meta.get("chunk_index", 0),
@@ -233,8 +289,16 @@ class RAGEngine:
             except Exception as e:
                 logger.warning(f"ChromaDB query fallback: {e}")
 
-        # In-memory vector cosine similarity fallback
-        return self._fallback_cosine_retrieval(query, document_id, top_k)
+        # In-memory vector cosine similarity fallback (strictly isolated)
+        fallback_res = self._fallback_cosine_retrieval(query, document_id, top_k)
+        if fallback_res:
+            return fallback_res
+
+        # If document_id is specified and no chunks found via search query, get document chunks directly
+        if document_id:
+            return self.get_document_chunks(document_id, limit=top_k)
+
+        return []
 
     def _fallback_cosine_retrieval(
         self,
@@ -242,16 +306,25 @@ class RAGEngine:
         document_id: Optional[str] = None,
         top_k: int = 4
     ) -> List[Dict[str, Any]]:
-        """Local vector cosine similarity over cached chunks."""
+        """Local vector cosine similarity over cached chunks with strict document isolation."""
         q_vec = self.embedder([query])[0]
         candidates = []
-        target_docs = [self._memory_chunks[document_id]] if (document_id and document_id in self._memory_chunks) else list(self._memory_chunks.values())
+        if document_id:
+            if document_id in self._memory_chunks:
+                target_docs = [self._memory_chunks[document_id]]
+            else:
+                # Strictly isolate: NEVER query other documents when document_id is specified!
+                target_docs = []
+        else:
+            target_docs = list(self._memory_chunks.values())
+
+        cutoff = 0.05 if document_id else 0.20
 
         for chunk_list in target_docs:
             for item in chunk_list:
                 doc_vec = self.embedder([item["text"]])[0]
                 dot = sum(q * d for q, d in zip(q_vec, doc_vec))
-                if dot >= 0.20:
+                if dot >= cutoff:
                     candidates.append({
                         "text": item["text"],
                         "document_id": item.get("document_id", document_id or ""),
