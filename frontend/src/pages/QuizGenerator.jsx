@@ -52,6 +52,12 @@ export default function QuizGenerator() {
 
   const handleDocumentChange = (docId) => {
     setSelectedDocId(docId);
+    setActiveQuiz(null);
+    setQuizResult(null);
+    setUserAnswers({});
+    setCurrentQIndex(0);
+    setError(null);
+    setQuizState('config');
     const doc = documents.find((d) => d.id === docId);
     if (doc) {
       const docTopic = (doc.topics && doc.topics.length > 0 && doc.topics[0] !== 'General')
@@ -59,6 +65,24 @@ export default function QuizGenerator() {
         : (doc.subject || 'Core Concepts');
       setTopic(docTopic);
     }
+  };
+
+  const handleTopicChange = (newTopic) => {
+    setTopic(newTopic);
+    setActiveQuiz(null);
+    setQuizResult(null);
+    setUserAnswers({});
+    setCurrentQIndex(0);
+    setError(null);
+  };
+
+  const handleNewQuiz = () => {
+    setActiveQuiz(null);
+    setQuizResult(null);
+    setUserAnswers({});
+    setCurrentQIndex(0);
+    setError(null);
+    setQuizState('config');
   };
 
   const currentDoc = documents.find((d) => d.id === selectedDocId);
@@ -191,7 +215,7 @@ export default function QuizGenerator() {
               <input
                 type="text"
                 value={topic}
-                onChange={(e) => setTopic(e.target.value)}
+                onChange={(e) => handleTopicChange(e.target.value)}
                 placeholder={currentDoc ? `e.g. ${currentDoc.subject || 'Core Concepts'}` : "e.g. Classical Encryption, Substitution Ciphers"}
                 className="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-2.5 text-sm text-slate-800 font-medium focus:ring-2 focus:ring-violet-500 focus:outline-hidden"
               />
@@ -202,7 +226,7 @@ export default function QuizGenerator() {
                     <button
                       key={idx}
                       type="button"
-                      onClick={() => setTopic(t)}
+                      onClick={() => handleTopicChange(t)}
                       className={`text-[11px] px-2 py-0.5 rounded-md border transition ${
                         topic === t
                           ? 'bg-violet-100 text-violet-800 border-violet-300 font-semibold'
@@ -434,7 +458,7 @@ export default function QuizGenerator() {
                   <span>Retake</span>
                 </button>
                 <button
-                  onClick={() => setQuizState('config')}
+                  onClick={handleNewQuiz}
                   className="px-4 py-2 rounded-xl bg-black/30 text-white font-bold text-xs hover:bg-black/40 transition"
                 >
                   New Quiz
