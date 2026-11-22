@@ -1,34 +1,23 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { useLocation } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useLocation, Link } from 'react-router-dom';
 import {
-  Volume2,
   Play,
   Pause,
   Square,
-  RotateCcw,
-  Sparkles,
-  Sliders,
   Headphones,
-  CheckCircle2,
   BookOpen,
-  VolumeX
+  VolumeX,
+  UploadCloud,
+  FileText
 } from 'lucide-react';
-
-const defaultLesson =
-  "Operating Systems — Chapter 7: Deadlocks and Process Synchronization.\n\n" +
-  "In a multiprogramming environment, several processes compete for a finite number of resources. " +
-  "A process requests resources. If the resources are not available at that time, the process enters a waiting state. " +
-  "Sometimes, a waiting process is never again able to change state, because the resources it has requested are held by other waiting processes. " +
-  "This critical condition is called a deadlock.\n\n" +
-  "There are four necessary conditions for deadlock to occur: Mutual Exclusion, Hold and Wait, No Preemption, and Circular Wait. " +
-  "All four conditions must hold simultaneously for a deadlock situation to arise.\n\n" +
-  "To handle deadlocks, systems employ either deadlock prevention, deadlock avoidance using Dijkstra's Banker's Algorithm, " +
-  "or the ostrich algorithm which ignores the problem altogether.";
+import { api } from '../services/api';
 
 export default function AudioLearning() {
   const location = useLocation();
-  const [text, setText] = useState(defaultLesson);
-  const [title, setTitle] = useState('Chapter 7: Deadlocks Audio Lesson');
+  const [documents, setDocuments] = useState([]);
+  const [selectedDocId, setSelectedDocId] = useState('');
+  const [text, setText] = useState(location.state?.text || '');
+  const [title, setTitle] = useState(location.state?.title || 'Audio Learning & Spoken Lessons');
 
   // Audio Speech state
   const [voices, setVoices] = useState([]);
@@ -44,6 +33,28 @@ export default function AudioLearning() {
     if (location.state?.text) {
       setText(location.state.text);
       if (location.state.title) setTitle(location.state.title);
+    } else {
+      // Check for uploaded documents
+      api.getDocuments()
+        .then((docs) => {
+          setDocuments(docs || []);
+          if (docs && docs.length > 0) {
+            const first = docs[0];
+            setSelectedDocId(first.id);
+            setTitle(`${first.subject || first.filename} — Audio Lesson`);
+            if (first.summary && first.summary.trim()) {
+              setText(first.summary);
+            } else {
+              const topics = (first.topics && first.topics.length > 0) ? first.topics.join(', ') : 'Core Concepts';
+              setText(`${first.subject || first.filename} — Curriculum Overview.\n\nKey study topics covered in this document include: ${topics}.\n\nGenerate a detailed AI Summary in the Summaries section to listen to full in-depth spoken lessons.`);
+            }
+          } else {
+            // No documents uploaded yet
+            setText('');
+            setTitle('Auditory Learning Suite');
+          }
+        })
+        .catch((err) => console.log('Could not load documents for audio:', err));
     }
 
     // Check browser Web Speech API support
@@ -56,7 +67,6 @@ export default function AudioLearning() {
       const available = window.speechSynthesis.getVoices();
       setVoices(available);
       if (available.length > 0 && !selectedVoice) {
-        // Prefer natural English voice if present
         const defaultV = available.find((v) => v.lang.includes('en') && (v.name.includes('Google') || v.name.includes('Natural') || v.name.includes('David'))) || available[0];
         setSelectedVoice(defaultV.name);
       }
@@ -69,6 +79,26 @@ export default function AudioLearning() {
       window.speechSynthesis.cancel();
     };
   }, [location.state]);
+
+  const handleDocumentSelect = (docId) => {
+    setSelectedDocId(docId);
+    const doc = documents.find((d) => d.id === docId);
+    if (!doc) return;
+
+    setTitle(`${doc.subject || doc.filename} — Audio Lesson`);
+    if (doc.summary && doc.summary.trim()) {
+      setText(doc.summary);
+    } else {
+      const topics = (doc.topics && doc.topics.length > 0) ? doc.topics.join(', ') : 'Core Concepts';
+      setText(`${doc.subject || doc.filename} — Curriculum Overview.\n\nKey study topics covered in this document include: ${topics}.\n\nGenerate a detailed AI Summary in the Summaries section to listen to full in-depth spoken lessons.`);
+    }
+
+    if (isPlaying || isPaused) {
+      window.speechSynthesis.cancel();
+      setIsPlaying(false);
+      setIsPaused(false);
+    }
+  };
 
   const handlePlay = () => {
     if (!supported || !text.trim()) return;
@@ -122,8 +152,6 @@ export default function AudioLearning() {
     setIsPaused(false);
   };
 
-  const paragraphs = text.split('\n\n').filter((p) => p.trim());
-
   return (
     <div className="max-w-4xl mx-auto space-y-8">
       {/* Page Header */}
@@ -143,6 +171,30 @@ export default function AudioLearning() {
           <span>
             Your current browser does not natively support the Web Speech API. Please use Google Chrome, Edge, or Safari for full audio synthesis.
           </span>
+        </div>
+      )}
+
+      {/* When no text or documents are available */}
+      {!text.trim() && (
+        <div className="p-6 rounded-2xl bg-white border border-slate-200/80 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-violet-100 text-violet-700 flex items-center justify-center shrink-0">
+              <UploadCloud className="w-5 h-5" />
+            </div>
+            <div>
+              <h4 className="font-bold text-sm text-slate-900">No Document Uploaded Yet</h4>
+              <p className="text-xs text-slate-500 mt-0.5">
+                Upload your course PDF or DOCX to auto-generate spoken audio lessons, or type study notes directly below.
+              </p>
+            </div>
+          </div>
+          <Link
+            to="/documents"
+            className="px-4 py-2.5 rounded-xl bg-violet-600 hover:bg-violet-700 text-white font-bold text-xs transition shadow-xs shrink-0 flex items-center gap-1.5"
+          >
+            <UploadCloud className="w-4 h-4" />
+            <span>Upload Course Material</span>
+          </Link>
         </div>
       )}
 
@@ -180,6 +232,24 @@ export default function AudioLearning() {
           </div>
         </div>
 
+        {/* Source Document Selector if documents exist */}
+        {documents.length > 0 && (
+          <div className="flex items-center gap-3 p-3 rounded-xl bg-slate-800/40 border border-slate-700/50">
+            <span className="text-xs text-slate-300 font-semibold whitespace-nowrap">Document Audio Source:</span>
+            <select
+              value={selectedDocId}
+              onChange={(e) => handleDocumentSelect(e.target.value)}
+              className="bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-slate-200 font-medium focus:ring-1 focus:ring-violet-500"
+            >
+              {documents.map((d) => (
+                <option key={d.id} value={d.id}>
+                  {d.filename} ({d.subject})
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+
         {/* Playback Controls & Voice Settings */}
         <div className="p-4 rounded-2xl bg-slate-800/60 border border-slate-700/60 space-y-4">
           {/* Main Buttons */}
@@ -187,11 +257,13 @@ export default function AudioLearning() {
             {!isPlaying || isPaused ? (
               <button
                 onClick={handlePlay}
-                disabled={!supported}
-                className="px-6 py-3 rounded-2xl bg-violet-600 hover:bg-violet-500 disabled:opacity-50 text-white font-bold text-sm transition shadow-lg shadow-violet-600/30 flex items-center gap-2"
+                disabled={!supported || !text.trim()}
+                className="px-6 py-3 rounded-2xl bg-violet-600 hover:bg-violet-500 disabled:opacity-40 text-white font-bold text-sm transition shadow-lg shadow-violet-600/30 flex items-center gap-2"
               >
                 <Play className="w-5 h-5 fill-white" />
-                <span>{isPaused ? 'Resume Lesson' : 'Listen Spoken Lesson'}</span>
+                <span>
+                  {isPaused ? 'Resume Lesson' : text.trim() ? 'Listen Spoken Lesson' : 'Upload or Enter Notes to Listen'}
+                </span>
               </button>
             ) : (
               <button
@@ -283,9 +355,9 @@ export default function AudioLearning() {
         <textarea
           value={text}
           onChange={(e) => setText(e.target.value)}
-          rows={10}
+          rows={8}
           className="w-full p-4 rounded-xl bg-slate-50 border border-slate-200 text-sm text-slate-800 leading-relaxed focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-violet-500 font-sans"
-          placeholder="Paste or type any educational summary to listen to it as a spoken lesson..."
+          placeholder="No text loaded yet. Upload a course document, generate a summary, or paste any study text here to listen..."
         />
 
         <div className="flex items-center justify-between text-xs text-slate-400 pt-2">

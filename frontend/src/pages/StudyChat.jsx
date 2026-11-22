@@ -432,7 +432,7 @@ export default function StudyChat() {
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder="Ask anything based on your course notes (e.g. 'Explain Banker's Algorithm with an example')..."
+            placeholder="Ask anything based on your course notes..."
             className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-800 focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-violet-500"
             disabled={loading}
           />
