@@ -194,7 +194,7 @@ class RAGEngine:
                                 "document_name": meta.get("document_name", "Academic Note"),
                                 "page_number": meta.get("page_number", 1),
                                 "chunk_index": meta.get("chunk_index", 0),
-                                "similarity_score": round(sim_score, 3)
+                                "similarity_score": float(round(sim_score, 3))
                             })
 
                 if retrieved:
@@ -221,14 +221,14 @@ class RAGEngine:
             for item in chunk_list:
                 doc_vec = self.embedder([item["text"]])[0]
                 dot = sum(q * d for q, d in zip(q_vec, doc_vec))
-                if dot > 0.05:
+                if dot >= 0.20:
                     candidates.append({
                         "text": item["text"],
                         "document_id": item.get("document_id", document_id or ""),
                         "document_name": item.get("document_name", "Academic Note"),
                         "page_number": item.get("page_number", 1),
                         "chunk_index": item.get("chunk_index", 0),
-                        "similarity_score": round(dot, 3)
+                        "similarity_score": float(round(dot, 3))
                     })
 
         candidates.sort(key=lambda x: x["similarity_score"], reverse=True)

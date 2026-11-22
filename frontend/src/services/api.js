@@ -78,6 +78,7 @@ export const api = {
       body: JSON.stringify(payload),
     }),
   getQuiz: (id) => request(`/quiz/${id}`),
+  exportQuizUrl: (id) => `/api/quiz/${id}/export`,
 
   // Flashcards
   generateFlashcards: (payload) =>
@@ -94,6 +95,7 @@ export const api = {
       body: JSON.stringify(payload),
     }),
   getSummaries: () => request("/summary/list"),
+  exportSummaryUrl: (id) => `/api/summary/${id}/export`,
 
   // Analytics
   getAnalyticsDashboard: () => request("/analytics/dashboard"),

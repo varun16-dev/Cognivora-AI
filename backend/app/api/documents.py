@@ -46,8 +46,16 @@ async def upload_document(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to save uploaded file: {str(e)}")
 
-    # Check file size limit
-    file_size_mb = os.path.getsize(saved_path) / (1024 * 1024)
+    # Check file size limit and empty document
+    file_bytes = os.path.getsize(saved_path)
+    if file_bytes == 0:
+        os.remove(saved_path)
+        raise HTTPException(
+            status_code=400,
+            detail="Uploaded document is empty (0 bytes). Please upload a valid document containing educational text."
+        )
+
+    file_size_mb = file_bytes / (1024 * 1024)
     if file_size_mb > settings.MAX_FILE_SIZE_MB:
         os.remove(saved_path)
         raise HTTPException(

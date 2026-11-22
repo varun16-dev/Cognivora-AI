@@ -9,6 +9,8 @@ services:
         value: 3.11.9
       - key: ENVIRONMENT
         value: production
+      - key: DATA_DIR_PATH
+        value: /data
       - key: GEMINI_API_KEY
         sync: false
     disk:

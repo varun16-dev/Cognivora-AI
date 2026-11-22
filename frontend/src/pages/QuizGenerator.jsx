@@ -12,7 +12,8 @@ import {
   BookOpen,
   AlertTriangle,
   Send,
-  RefreshCw
+  RefreshCw,
+  Download
 } from 'lucide-react';
 import { api } from '../services/api';
 
@@ -383,7 +384,15 @@ export default function QuizGenerator() {
                 </p>
               </div>
 
-              <div className="flex items-center gap-3">
+              <div className="flex flex-wrap items-center gap-3">
+                <a
+                  href={api.exportQuizUrl(quizResult.quiz_id)}
+                  download
+                  className="px-4 py-2 rounded-xl bg-white/20 hover:bg-white/30 text-white font-bold text-xs transition shadow-xs flex items-center gap-1.5"
+                >
+                  <Download className="w-4 h-4" />
+                  <span>Export Quiz Sheet</span>
+                </a>
                 <button
                   onClick={handleRetake}
                   className="px-4 py-2 rounded-xl bg-white text-slate-900 font-bold text-xs hover:bg-slate-100 transition shadow-xs flex items-center gap-1.5"

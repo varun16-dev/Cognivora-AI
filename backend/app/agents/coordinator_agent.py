@@ -13,6 +13,15 @@ from app.agents.summary_agent import SummaryAgent
 from app.services.analytics_service import AnalyticsService
 from app.database.models import AgentLogModel, DocumentModel
 from app.schemas.schemas import ChatMessageResponse, Citation
+from app.agents.langchain_tools import (
+    rag_retrieval_tool,
+    quiz_generator_tool,
+    flashcard_generator_tool,
+    summary_generator_tool,
+    study_analytics_tool,
+    EDUCATIONAL_TOOLS,
+    EDUCATIONAL_TOOLS_BY_NAME
+)
 
 logger = logging.getLogger("CognivoraAI.CoordinatorAgent")
 
@@ -21,9 +30,12 @@ class CoordinatorAgent:
     """
     Central Orchestration Agent.
     Understands student queries, classifies pedagogical intent,
-    autonomously selects and executes specialized educational tools/agents,
-    and logs every decision with execution telemetry.
+    autonomously selects and executes specialized educational tools/agents
+    using LangChain tool abstractions, and logs every decision with execution telemetry.
     """
+
+    # Registered LangChain tools available to this Coordinator
+    tools = EDUCATIONAL_TOOLS
 
     @staticmethod
     def handle_student_interaction(
@@ -33,12 +45,12 @@ class CoordinatorAgent:
         db: Session = None
     ) -> ChatMessageResponse:
         """
-        Coordinates full multi-agent reasoning, tool dispatch, and RAG answer synthesis.
+        Coordinates full multi-agent reasoning, LangChain tool dispatch, and RAG answer synthesis.
         """
         start_time = time.time()
         logger.info(f"[CoordinatorAgent] Received student message: '{message}' (mode={pedagogical_mode})")
 
-        # 1. Autonomous Intent Classification
+        # 1. Autonomous Intent Classification & Tool Selection
         intent = CoordinatorAgent._classify_intent(message)
         decision_rationale = ""
         tools_called = []
@@ -60,103 +72,128 @@ class CoordinatorAgent:
         answer = ""
         model_used = "Gemini 2.5 Flash"
         is_demo_mode = False
+        grounded_in_docs = False
 
         try:
             if intent == "quiz":
-                decision_rationale = "Student requested assessment practice. Dispatched to QuizAgent for calibrated question generation."
-                tools_called = ["RAGRetrievalTool", "QuizGenerationTool"]
-                quiz = QuizAgent.generate_quiz(
-                    document_id=document_id or "default_doc",
-                    document_name=doc_name,
-                    topic="Deadlocks & Scheduling",
-                    difficulty="medium",
-                    question_count=5,
-                    db=db
-                )
+                decision_rationale = "Student requested assessment practice. Selected and executed LangChain 'quiz_generator_tool'."
+                tools_called = ["quiz_generator_tool"]
+                tool_res_raw = quiz_generator_tool.invoke({
+                    "topic": "Deadlocks & Scheduling",
+                    "difficulty": "medium",
+                    "question_count": 5,
+                    "document_id": document_id
+                })
+                tool_data = json.loads(tool_res_raw)
                 answer = (
                     f"🎯 **Diagnostic Quiz Generated!**\n\n"
-                    f"I have created a 5-question practice quiz titled **'{quiz.title}'** grounded in your course notes.\n"
-                    f"Navigate to the **Quiz Generator** tab in the sidebar to attempt the quiz with interactive timer and instant feedback."
+                    f"I have created a 5-question practice quiz titled **'{tool_data.get('title', 'Course Assessment')}'** grounded in your course notes.\n"
+                    f"Navigate to the **Quiz Generator** tab in the sidebar to attempt the quiz with an interactive timer and instant feedback."
                 )
+                grounded_in_docs = True
 
             elif intent == "flashcard":
-                decision_rationale = "Student requested memory reinforcement. Dispatched to FlashcardAgent for spaced-repetition deck generation."
-                tools_called = ["RAGRetrievalTool", "FlashcardGenerationTool"]
-                deck = FlashcardAgent.generate_deck(
-                    document_id=document_id or "default_doc",
-                    document_name=doc_name,
-                    topic="Core Concepts",
-                    card_count=6,
-                    db=db
-                )
+                decision_rationale = "Student requested memory reinforcement. Selected and executed LangChain 'flashcard_generator_tool'."
+                tools_called = ["flashcard_generator_tool"]
+                tool_res_raw = flashcard_generator_tool.invoke({
+                    "topic": "Core Concepts",
+                    "card_count": 6,
+                    "document_id": document_id
+                })
+                tool_data = json.loads(tool_res_raw)
                 answer = (
                     f"🃏 **Flashcard Deck Generated!**\n\n"
-                    f"I have created the **'{deck.title}'** deck with 6 revision cards.\n"
-                    f"Navigate to the **Flashcards** tab to study with 3D flip animations and Leitner review intervals."
+                    f"I have created the **'{tool_data.get('title', 'Active Recall Deck')}'** deck with 6 revision cards.\n"
+                    f"Navigate to the **Flashcards** tab to study with 3D flip animations and spaced-repetition ratings."
                 )
+                grounded_in_docs = True
 
             elif intent == "summary":
-                decision_rationale = "Student requested conceptual overview. Dispatched to SummaryAgent for multi-mode note synthesis."
-                tools_called = ["RAGRetrievalTool", "SummaryGenerationTool"]
-                summary_record = SummaryAgent.generate_summary(
-                    document_id=document_id or "default_doc",
-                    document_name=doc_name,
-                    topic="Chapter Overview",
-                    mode="detailed",
-                    db=db
-                )
+                decision_rationale = "Student requested conceptual overview. Selected and executed LangChain 'summary_generator_tool'."
+                tools_called = ["summary_generator_tool"]
+                tool_res_raw = summary_generator_tool.invoke({
+                    "topic": "Chapter Overview",
+                    "mode": "detailed",
+                    "document_id": document_id
+                })
+                tool_data = json.loads(tool_res_raw)
                 answer = (
                     f"📝 **Summary Generated!**\n\n"
-                    f"### {summary_record.title}\n\n"
-                    f"{summary_record.content}\n\n"
+                    f"### {tool_data.get('title', 'Chapter Summary')}\n\n"
+                    f"{tool_data.get('content', '')}\n\n"
                     f"💡 *Tip:* You can also listen to this as an audio lesson in the **Audio Learning** tab."
                 )
+                grounded_in_docs = True
 
             elif intent == "analytics":
-                decision_rationale = "Student inquired about mastery or weaknesses. Dispatched to AnalyticsService."
-                tools_called = ["LearnerAnalyticsEngine", "TopicMasteryCalculation"]
-                dashboard_data = AnalyticsService.get_dashboard_metrics(db) if db else None
-                weak_list = ", ".join(dashboard_data.weak_topics) if dashboard_data and dashboard_data.weak_topics else "None (<60% threshold)"
-                avg_score = dashboard_data.average_quiz_score if dashboard_data else 75.0
+                decision_rationale = "Student inquired about mastery or weaknesses. Selected and executed LangChain 'study_analytics_tool'."
+                tools_called = ["study_analytics_tool"]
+                tool_res_raw = study_analytics_tool.invoke({"user_id": "student_default"})
+                tool_data = json.loads(tool_res_raw)
+                weak_list = ", ".join(tool_data.get("weak_topics", [])) if tool_data.get("weak_topics") else "None (<60% threshold)"
+                avg_score = tool_data.get("average_quiz_score", 75.0)
                 answer = (
                     f"📊 **Student Mastery Diagnostic:**\n\n"
                     f"- **Overall Average Score:** {avg_score}%\n"
                     f"- **Identified Weak Topics:** {weak_list}\n"
                     f"- **Recommended Next Action:** Take an adaptive practice quiz on your lowest-scoring topic to reinforce retention."
                 )
+                grounded_in_docs = True
 
             else:
-                # Default: Grounded Q&A via RAG
-                decision_rationale = f"Conceptual inquiry detected. Dispatched to DocumentAgent for vector retrieval and Gemini for grounded synthesis (mode={pedagogical_mode})."
-                tools_called = ["DocumentAgent.retrieve_grounded_context", "GeminiService.generate_grounded_answer"]
+                # Default: Grounded Q&A via LangChain RAG Retrieval Tool
+                decision_rationale = f"Conceptual inquiry detected. Selected LangChain 'rag_retrieval_tool' and Gemini synthesis engine (mode={pedagogical_mode})."
+                tools_called = ["rag_retrieval_tool", "GeminiService.generate_grounded_answer"]
 
-                # 1. Retrieve RAG chunks
+                # 1. Retrieve RAG chunks via LangChain tool
+                rag_res_raw = rag_retrieval_tool.invoke({
+                    "query": message,
+                    "document_id": document_id
+                })
+                rag_data = json.loads(rag_res_raw)
+                
+                # Fetch full chunk objects from DocumentAgent
                 chunks = DocumentAgent.retrieve_grounded_context(
                     query=message,
                     document_id=document_id,
                     top_k=4
                 )
 
-                # 2. Format citations
-                for c in chunks:
-                    citations.append(Citation(
-                        document_id=c.get("document_id", document_id or ""),
-                        document_name=c.get("document_name", doc_name),
-                        page_number=c.get("page_number", 1),
-                        chunk_index=c.get("chunk_index", 0),
-                        similarity_score=c.get("similarity_score", 0.8),
-                        excerpt=c.get("text", "")[:250] + "..."
-                    ))
+                # Strict Grounding Check:
+                # If no chunks found or top chunk similarity is too low (< 0.20), decline to hallucinate
+                is_irrelevant = (not chunks) or (chunks[0].get("similarity_score", 0.0) < 0.20)
 
-                # 3. Generate grounded response
-                llm_res = gemini_service.generate_grounded_answer(
-                    prompt=message,
-                    context_chunks=chunks,
-                    pedagogical_mode=pedagogical_mode
-                )
-                answer = llm_res.get("answer", "")
-                model_used = llm_res.get("model_used", "Gemini 2.5 Flash")
-                is_demo_mode = llm_res.get("is_demo_mode", False)
+                if is_irrelevant:
+                    answer = (
+                        "I cannot find this specific information in your uploaded course materials. "
+                        "Please upload relevant notes or consult your professor."
+                    )
+                    model_used = "Cognivora Grounding Guardrail"
+                    is_demo_mode = not gemini_service.is_live()
+                    grounded_in_docs = False
+                else:
+                    # Format citations only for genuinely relevant chunks
+                    for c in chunks:
+                        if c.get("similarity_score", 0.0) >= 0.20:
+                            citations.append(Citation(
+                                document_id=c.get("document_id", document_id or ""),
+                                document_name=c.get("document_name", doc_name),
+                                page_number=c.get("page_number", 1),
+                                chunk_index=c.get("chunk_index", 0),
+                                similarity_score=c.get("similarity_score", 0.8),
+                                excerpt=c.get("text", "")[:250] + "..."
+                            ))
+
+                    # 3. Generate grounded response
+                    llm_res = gemini_service.generate_grounded_answer(
+                        prompt=message,
+                        context_chunks=chunks,
+                        pedagogical_mode=pedagogical_mode
+                    )
+                    answer = llm_res.get("answer", "")
+                    model_used = llm_res.get("model_used", "Gemini 2.5 Flash")
+                    is_demo_mode = llm_res.get("is_demo_mode", False)
+                    grounded_in_docs = len(citations) > 0
 
         except Exception as e:
             logger.error(f"[CoordinatorAgent] Execution failure: {e}")
@@ -192,7 +229,7 @@ class CoordinatorAgent:
             intent_detected=intent,
             model_used=model_used,
             is_demo_mode=is_demo_mode,
-            grounded_in_docs=len(citations) > 0 or intent != "qa"
+            grounded_in_docs=grounded_in_docs
         )
 
     @staticmethod

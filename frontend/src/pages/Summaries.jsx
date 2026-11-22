@@ -13,7 +13,8 @@ import {
   Zap,
   BookmarkCheck,
   RefreshCw,
-  AlertCircle
+  AlertCircle,
+  Download
 } from 'lucide-react';
 import { api } from '../services/api';
 
@@ -211,7 +212,16 @@ export default function Summaries() {
               </h3>
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
+              <a
+                href={api.exportSummaryUrl(activeSummary.id)}
+                download
+                className="px-3 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-xs font-semibold text-slate-700 transition flex items-center gap-1.5"
+              >
+                <Download className="w-3.5 h-3.5 text-slate-500" />
+                <span>Export Guide</span>
+              </a>
+
               <button
                 onClick={handleCopy}
                 className="px-3 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-xs font-semibold text-slate-700 transition flex items-center gap-1.5"

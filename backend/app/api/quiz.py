@@ -151,3 +151,45 @@ def get_quiz(quiz_id: str, db: Session = Depends(get_db)):
         questions=questions,
         created_at=quiz.created_at
     )
+
+
+@router.get("/{quiz_id}/export")
+def export_quiz_markdown(quiz_id: str, db: Session = Depends(get_db)):
+    """Exports quiz questions, options, and explanations as a downloadable Markdown study worksheet."""
+    from fastapi.responses import PlainTextResponse
+
+    quiz = db.query(QuizModel).filter(QuizModel.id == quiz_id).first()
+    if not quiz:
+        raise HTTPException(status_code=404, detail="Quiz not found.")
+
+    questions = json.loads(quiz.questions_json)
+    lines = [
+        f"# {quiz.title}",
+        f"**Topic:** {quiz.topic} | **Difficulty:** {quiz.difficulty.capitalize()} | **Questions:** {quiz.question_count}",
+        f"**Generated:** {quiz.created_at.strftime('%Y-%m-%d %H:%M')}",
+        "",
+        "---",
+        ""
+    ]
+
+    for idx, q in enumerate(questions, 1):
+        lines.append(f"### Q{idx}. {q.get('question')}")
+        opts = q.get("options", [])
+        if opts:
+            for opt in opts:
+                lines.append(f"- [ ] {opt}")
+        lines.append("")
+        lines.append(f"> **Correct Answer:** {q.get('correct_answer')}")
+        lines.append(f"> **Explanation:** {q.get('explanation')}")
+        if q.get("citation"):
+            lines.append(f"> **Citation:** {q.get('citation')}")
+        lines.append("")
+        lines.append("---")
+        lines.append("")
+
+    content = "\n".join(lines)
+    safe_title = "".join(c for c in quiz.title if c.isalnum() or c in (" ", "_", "-")).strip().replace(" ", "_")
+    return PlainTextResponse(
+        content=content,
+        headers={"Content-Disposition": f'attachment; filename="{safe_title}_Study_Sheet.md"'}
+    )

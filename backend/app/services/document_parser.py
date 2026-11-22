@@ -44,16 +44,13 @@ class DocumentParser:
         except Exception as e:
             raise RuntimeError(f"Failed to parse PDF document '{file_path}': {str(e)}")
 
-        if not pages:
-            # Fallback if document is scanned or text is empty
-            pages.append({
-                "page_number": 1,
-                "text": "Document appears to contain scanned images or no extractable digital text layer."
-            })
+        if not pages or all(len(p["text"].strip()) == 0 for p in pages):
+            raise ValueError(f"The PDF document '{path.name}' contains no extractable text layer.")
         return pages
 
     @staticmethod
     def _parse_docx(file_path: str) -> List[Dict[str, Any]]:
+        path = Path(file_path)
         try:
             doc = DocxDocument(file_path)
             full_text = []
@@ -62,9 +59,8 @@ class DocumentParser:
                     full_text.append(p.text.strip())
             
             combined_text = "\n\n".join(full_text)
-            # Break large docx files into pseudo-pages (~3000 chars per page)
-            if not combined_text:
-                combined_text = "Empty DOCX document."
+            if not combined_text.strip():
+                raise ValueError(f"The DOCX document '{path.name}' contains no readable text.")
             
             char_limit = 2500
             pages = []
@@ -76,11 +72,14 @@ class DocumentParser:
                 start += char_limit
                 page_num += 1
             return pages
+        except ValueError:
+            raise
         except Exception as e:
             raise RuntimeError(f"Failed to parse DOCX document '{file_path}': {str(e)}")
 
     @staticmethod
     def _parse_txt(file_path: str) -> List[Dict[str, Any]]:
+        path = Path(file_path)
         encodings = ["utf-8", "utf-8-sig", "latin-1", "cp1252"]
         content = ""
         for enc in encodings:
@@ -91,8 +90,8 @@ class DocumentParser:
             except UnicodeDecodeError:
                 continue
 
-        if not content:
-            raise RuntimeError(f"Could not read text file '{file_path}' with supported encodings.")
+        if not content or not content.strip():
+            raise ValueError(f"The text document '{path.name}' is empty.")
 
         # Chunk into pseudo-pages for citation consistency
         char_limit = 2500

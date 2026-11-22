@@ -133,13 +133,13 @@ class GeminiService:
         pedagogical_mode: str
     ) -> Dict[str, Any]:
         """High-fidelity contextual response generator when operating in Demo Mode."""
-        if not context_chunks:
+        if not context_chunks or context_chunks[0].get("similarity_score", 0.0) < 0.20:
             return {
                 "answer": (
-                    "**Notice (Demonstration Mode):** No relevant context could be found in your uploaded materials "
-                    "for this query. To get grounded answers, ensure you have uploaded documents relating to this topic."
+                    "I cannot find this specific information in your uploaded course materials. "
+                    "Please upload relevant notes or consult your professor."
                 ),
-                "model_used": "Built-in Educational Engine (Demo Mode)",
+                "model_used": "Built-in Educational Engine (Grounding Guardrail Active)",
                 "is_demo_mode": True
             }
 

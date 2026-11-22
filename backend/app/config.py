@@ -5,10 +5,11 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 # Base directories
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
-DATA_DIR = BASE_DIR / "data"
+custom_data_dir = os.getenv("DATA_DIR_PATH") or os.getenv("PERSISTENT_DATA_PATH")
+DATA_DIR = Path(custom_data_dir) if custom_data_dir else (BASE_DIR / "data")
 UPLOAD_DIR = DATA_DIR / "uploads"
 VECTOR_DIR = DATA_DIR / "vector_store"
-SAMPLE_DIR = DATA_DIR / "sample_documents"
+SAMPLE_DIR = BASE_DIR / "data" / "sample_documents"
 
 # Ensure directories exist
 for directory in [DATA_DIR, UPLOAD_DIR, VECTOR_DIR, SAMPLE_DIR]:
