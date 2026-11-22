@@ -1,0 +1,46 @@
+# Python & Bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Environment Secrets
+.env
+.env.local
+.env.*.local
+*.key
+*.pem
+
+# SQLite & Data Persistence
+data/cognivora.db
+data/cognivora.db-journal
+data/uploads/*
+!data/uploads/.gitkeep
+data/vector_store/*
+!data/vector_store/.gitkeep
+
+# Node & Frontend
+node_modules/
+frontend/node_modules/
+dist/
+frontend/dist/
+.npm
+.eslintcache
+.stylelintcache
+
+# Testing & Coverage
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Operating System & IDE
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
