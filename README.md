@@ -1,13 +1,20 @@
 # Educational Content Generator AI Agent (Cognivora AI)
 
-[![Track](https://img.shields.io/badge/Track-Track%20A%20(Essential)%20%2B%20React-blueviolet.svg)](https://github.com)
-[![Architecture](https://img.shields.io/badge/Architecture-Multi--Agent%20%7C%20RAG-indigo.svg)](https://github.com)
-[![Backend](https://img.shields.io/badge/Backend-FastAPI%20%7C%20Python%203.14-009688.svg)](https://fastapi.tiangolo.com)
-[![Frontend](https://img.shields.io/badge/Frontend-React%2019%20%7C%20Vite%20%7C%20Tailwind%20CSS-black.svg)](https://vitejs.dev)
-[![AI Engine](https://img.shields.io/badge/AI%20Model-Google%20Gemini%202.5%20Flash-4285F4.svg)](https://ai.google.dev/)
+[![Track](https://img.shields.io/badge/Track-Track%20A%20(Essential)%20%2B%20React-blueviolet.svg)](https://github.com/varun16-dev/Cognivora-AI)
+[![Live Frontend](https://img.shields.io/badge/Live%20Demo-Vercel-black.svg?logo=vercel)](https://cognivora-ai.vercel.app)
+[![Live Backend](https://img.shields.io/badge/Live%20API-Render-46E3B7.svg?logo=render)](https://cognivora-backend.onrender.com)
+[![Swagger Docs](https://img.shields.io/badge/API%20Docs-Swagger-85EA2D.svg?logo=swagger)](https://cognivora-backend.onrender.com/docs)
+[![Architecture](https://img.shields.io/badge/Architecture-Multi--Agent%20%7C%20RAG-indigo.svg)](https://github.com/varun16-dev/Cognivora-AI)
+[![Tests](https://img.shields.io/badge/Tests-30%2F30%20Passed-brightgreen.svg)](tests/)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
-> **Cognivora AI** is an intelligent, autonomous multi-agent educational assistant designed to transform static academic materials (PDFs, DOCX, and lecture notes) into active, adaptive, multimodal learning resources. Powered by Google Gemini 2.5 Flash, strict RAG grounding, a multi-agent orchestrator, and an algorithmic student skill model, it automatically generates verified quizzes, spaced-repetition flashcards, multi-mode summaries, spoken audio lessons, and actionable learning analytics.
+> **Cognivora AI** is an intelligent, autonomous multi-agent educational assistant designed to transform static academic materials (PDFs, DOCX, and lecture notes) into active, adaptive, multimodal learning resources. Powered by Google Gemini, strict RAG grounding, a multi-agent orchestrator, and an algorithmic student skill model, it automatically generates verified quizzes, spaced-repetition flashcards, multi-mode summaries, spoken audio lessons, and actionable learning analytics.
+
+**Live Deployment URLs:**
+- **Frontend Application (Vercel):** [https://cognivora-ai.vercel.app](https://cognivora-ai.vercel.app)
+- **Backend API Server (Render):** [https://cognivora-backend.onrender.com](https://cognivora-backend.onrender.com)
+- **Interactive API Documentation:** [https://cognivora-backend.onrender.com/docs](https://cognivora-backend.onrender.com/docs)
+- **GitHub Repository:** [https://github.com/varun16-dev/Cognivora-AI](https://github.com/varun16-dev/Cognivora-AI)
 
 ---
 
@@ -619,28 +626,60 @@ Frontend web application will be accessible at: `http://localhost:3000`.
 
 ## 19. Verification & Testing
 
-Cognivora AI includes automated tests covering workspace sanity, API contracts, RAG retrieval, and quiz grading:
+Cognivora AI includes 30 automated tests across 4 comprehensive test suites covering workspace sanity, API contracts, strict RAG retrieval boundaries, Bloom's difficulty calibration, and duplicate prevention:
 
 ```powershell
-# Run workspace sanity check
-python tests/test_workspace_sanity.py
-
-# Run comprehensive backend pytest suite (all 11 test modules)
-pytest tests/test_backend_api.py -v --tb=short
+# Run all automated test suites (30 tests)
+$env:PYTHONPATH="backend"
+pytest tests/ -v --tb=short
 ```
 
-**Verification Results:**
-- `test_health_check`: PASSED
-- `test_list_documents`: PASSED
-- `test_rag_agent_chat`: PASSED (verified citation attribution)
-- `test_generate_and_submit_quiz`: PASSED (schema validity & score calculation)
-- `test_generate_flashcards`: PASSED
-- `test_generate_summaries`: PASSED (multi-mode validation)
-- `test_analytics_dashboard`: PASSED (EWMA topic mastery)
+**Verification Results Summary (30 / 30 Passed — 100%):**
+
+1. **Quiz Difficulty, Diversity & Anti-Repetition (`tests/test_quiz_difficulty_and_diversity.py`):**
+   - `test_caesar_cipher_easy_difficulty`: **PASSED** (beginner recall and definitions)
+   - `test_caesar_cipher_medium_difficulty`: **PASSED** ($\ge 70\%$ applied reasoning & calculations)
+   - `test_caesar_cipher_hard_difficulty_strict_analytic`: **PASSED** ($\ge 80\%$ multi-step scenarios, zero T/F)
+   - `test_rnn_deep_learning_document_isolation`: **PASSED** (zero concept leakage between ML and crypto)
+   - `test_duplicate_prevention_across_consecutive_quizzes`: **PASSED** (Jaccard similarity $< 0.40$)
+   - `test_internal_quiz_deduplication`: **PASSED** (intra-quiz pairwise distinctness)
+   - `test_correct_answer_and_options_integrity`: **PASSED** (4 unique options, 1 verified correct answer)
+   - `test_insufficient_or_invalid_document_content`: **PASSED** (clean 404 validation)
+
+2. **Strict Document Isolation Suite (`tests/test_quiz_document_isolation.py`):**
+   - `test_rag_retrieval_strict_document_isolation`: **PASSED** (vector partition boundaries)
+   - `test_quiz_generator_data_security_document_isolation`: **PASSED** (0% OS deadlock leakage)
+   - `test_quiz_generator_operating_systems_isolation`: **PASSED** (0% crypto cipher leakage)
+   - `test_quiz_generation_invalid_document_returns_404`: **PASSED** (invalid doc error handling)
+   - `test_repeated_cross_document_isolation`: **PASSED** (Doc A $\rightarrow$ Doc B $\rightarrow$ Doc A zero state carryover)
+
+3. **Backend API Suite (`tests/test_backend_api.py`):**
+   - `test_health_check`: **PASSED**
+   - `test_list_documents`: **PASSED**
+   - `test_rag_agent_chat`: **PASSED** (citations with page numbers)
+   - `test_generate_and_submit_quiz`: **PASSED** (scoring & attempt persistence)
+   - `test_generate_flashcards`: **PASSED** (3D deck generation)
+   - `test_generate_summaries`: **PASSED** (5 pedagogical digest modes)
+   - `test_analytics_dashboard`: **PASSED** (EWMA mastery aggregation)
+   - `test_export_quiz_markdown`: **PASSED** (markdown worksheet export)
+   - `test_export_summary_markdown`: **PASSED** (markdown summary export)
+   - `test_document_hierarchy`: **PASSED** (syllabus extraction)
+   - `test_safe_parse_topics`: **PASSED** (topic parser robustness)
+   - `test_invalid_payload_validation`: **PASSED** (Pydantic 422 error boundary)
+
+4. **Workspace & System Sanity Suite (`tests/test_workspace_sanity.py`):**
+   - 5/5 environment, database schema, ChromaDB volume, sample file, and CORS checks: **PASSED**
 
 ---
 
-## 20. Deployment Guide
+## 20. Deployment Guide & Live Links
+
+| Service | Environment | Provider | URL / Endpoint |
+| :--- | :--- | :--- | :--- |
+| **Frontend UI** | Production | Vercel | [https://cognivora-ai.vercel.app](https://cognivora-ai.vercel.app) |
+| **Backend API** | Production | Render | [https://cognivora-backend.onrender.com](https://cognivora-backend.onrender.com) |
+| **API Docs (Swagger)** | Production | Render | [https://cognivora-backend.onrender.com/docs](https://cognivora-backend.onrender.com/docs) |
+| **Source Code** | Git Repository | GitHub | [https://github.com/varun16-dev/Cognivora-AI](https://github.com/varun16-dev/Cognivora-AI) |
 
 ### Frontend Deployment (Vercel)
 1. Push repository to GitHub.
@@ -736,5 +775,19 @@ pytest tests/test_backend_api.py -v --tb=short
 
 ---
 
-## 23. License
+## 23. Known Limitations & Future Scope
+
+### Known Limitations (Track A)
+1. **Render Free-Tier Spin-Down:** Render's free cloud instance enters sleep mode after 15 minutes of idle time. The first API call after inactivity may experience a 30–50 second cold-start delay.
+2. **Ephemeral Disk on Free Cloud Hosting:** The free Render container uses ephemeral storage; uploaded documents and ChromaDB vectors reset if the free container restarts unless configured with persistent storage (`/data`) or a managed cloud vector database.
+3. **Web Speech Synthesis Browser Variance:** Audio lesson synthesis leverages the standard W3C Web Speech API, which depends on local browser speech engines (optimal in Chrome, Edge, and Safari).
+
+### Future Scope (Track B & Beyond)
+- **Automated Lecture Slides:** Direct conversion of course units into downloadable `.pptx` presentations.
+- **Offline Edge Models:** In-browser inference via WebLLM / Gemma 2B for 100% offline edge privacy.
+- **LTI 1.3 Canvas / Moodle Integration:** Native gradebook syncing and LMS syllabus ingestion.
+
+---
+
+## 24. License
 This project is licensed under the MIT License — see the [LICENSE](LICENSE) file for details.
