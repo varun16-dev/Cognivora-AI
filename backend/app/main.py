@@ -38,10 +38,15 @@ async def lifespan(app: FastAPI):
     # 1. Initialize SQLite Database Tables
     init_db()
 
-    # 2. Check if default sample document is loaded; if not, auto-seed
+    # 2. Check if default sample document is loaded and indexed; if not, auto-seed/sync
     db = SessionLocal()
     try:
+        from app.services.rag_engine import rag_engine
+        from app.agents.document_agent import TextExtractor
+        
         doc_count = db.query(DocumentModel).count()
+        chroma_empty = (rag_engine.collection is not None and rag_engine.collection.count() == 0)
+
         if doc_count == 0:
             sample_file = SAMPLE_DIR / "os_deadlocks_and_scheduling.txt"
             if sample_file.exists():
@@ -51,8 +56,21 @@ async def lifespan(app: FastAPI):
                     original_filename="Operating_Systems_Unit3_Deadlocks.txt",
                     db=db
                 )
+        elif chroma_empty:
+            # Re-index existing sample docs into ChromaDB
+            sample_file = SAMPLE_DIR / "os_deadlocks_and_scheduling.txt"
+            if sample_file.exists():
+                existing_doc = db.query(DocumentModel).filter(
+                    DocumentModel.filename == "Operating_Systems_Unit3_Deadlocks.txt"
+                ).first()
+                if existing_doc:
+                    logger.info("Re-indexing existing sample document chunks into ChromaDB...")
+                    from app.services.document_parser import DocumentParser
+                    pages = DocumentParser.extract_text_from_file(str(sample_file))
+                    chunks = DocumentParser.semantic_chunk_pages(pages)
+                    rag_engine.index_document_chunks(existing_doc.id, existing_doc.filename, existing_doc.subject, chunks)
     except Exception as e:
-        logger.warning(f"Initial sample document seeding skipped: {e}")
+        logger.warning(f"Initial sample document seeding/sync skipped: {e}")
     finally:
         db.close()
 

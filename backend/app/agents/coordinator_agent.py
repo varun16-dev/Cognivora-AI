@@ -160,8 +160,13 @@ class CoordinatorAgent:
                 )
 
                 # Strict Grounding Check:
-                # If no chunks found or top chunk similarity is too low (< 0.20), decline to hallucinate
-                is_irrelevant = (not chunks) or (chunks[0].get("similarity_score", 0.0) < 0.20)
+                # If no chunks found, similarity is too low, or non-stopword query tokens have zero overlap with curriculum text
+                stop_words = {"what", "is", "the", "and", "was", "for", "in", "of", "a", "an", "to", "how", "why", "are", "do", "does", "can", "you", "tell", "me", "about"}
+                q_tokens = set(re.findall(r"\w+", message.lower())) - stop_words
+                top_text = (chunks[0].get("text", "") if chunks else "").lower()
+                has_keyword_match = any(t in top_text for t in q_tokens) if q_tokens else True
+
+                is_irrelevant = (not chunks) or (chunks[0].get("similarity_score", 0.0) < 0.45 and not has_keyword_match) or (not has_keyword_match and chunks[0].get("similarity_score", 0.0) < 0.65)
 
                 if is_irrelevant:
                     answer = (
@@ -191,9 +196,13 @@ class CoordinatorAgent:
                         pedagogical_mode=pedagogical_mode
                     )
                     answer = llm_res.get("answer", "")
-                    model_used = llm_res.get("model_used", "Gemini 2.5 Flash")
+                    model_used = llm_res.get("model_used", "Gemini 3.5 Flash")
                     is_demo_mode = llm_res.get("is_demo_mode", False)
-                    grounded_in_docs = len(citations) > 0
+                    if "cannot find this specific information" in answer.lower():
+                        citations = []
+                        grounded_in_docs = False
+                    else:
+                        grounded_in_docs = len(citations) > 0
 
         except Exception as e:
             logger.error(f"[CoordinatorAgent] Execution failure: {e}")

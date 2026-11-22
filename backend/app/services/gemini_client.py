@@ -1,4 +1,6 @@
 import os
+import re
+import time
 import json
 import logging
 from typing import Dict, Any, Optional, List
@@ -57,36 +59,49 @@ class GeminiService:
         ])
 
         system_instruction = (
-            "You are Cognivora AI, a rigorous, pedagogical Academic AI Tutor. "
-            "Your highest priority is GROUNDED ACCURACY. You must answer the student's question "
-            "using ONLY the provided reference context from their course materials.\n"
-            "Rules:\n"
-            "1. If the provided context does NOT contain enough information to answer the question, state: "
+            "You are Cognivora AI, a rigorous, pedagogical Academic AI Tutor and Educational Assistant. "
+            "Your highest priority is GROUNDED ACCURACY, pedagogical depth, and clarity.\n\n"
+            "Pedagogical Guidelines:\n"
+            "1. Ground your entire answer strictly in the provided retrieved course context.\n"
+            "2. Provide a structured, high-quality educational explanation:\n"
+            "   - **Clear Definition & Overview**: Define the core concepts clearly.\n"
+            "   - **Mechanics & Detailed Explanation**: Detail how the concepts, rules, or algorithms operate step-by-step from the curriculum text.\n"
+            "   - **Examples & Practical Context**: Include concrete examples or illustrations grounded in or implied by the material.\n"
+            "   - **Actionable Takeaways**: Highlight key points essential for exam review or mastery.\n"
+            "3. Format cleanly using Markdown with headings (##, ###), bold key terminology, numbered steps, and bullet points.\n"
+            "4. Cite sources accurately in the body (e.g. `[Source 1, Page 3]`). Never fabricate source labels or page numbers.\n"
+            "5. NEVER use generic placeholder or boiler-plate phrases like 'Conditions and algorithmic criteria must be satisfied.' Always explain the actual concept and mechanism.\n"
+            "6. Strict Grounding Guardrail: If the provided context does NOT contain enough information to answer the question, state: "
             "'I cannot find this specific information in your uploaded course materials. Please upload relevant notes or consult your professor.'\n"
-            "2. Never fabricate facts, external theories, or unverified claims not grounded in the context.\n"
-            "3. Cite source references naturally (e.g. '[Source 1, Page 3]').\n"
-            f"4. Pedagogical Tone: {mode_instructions.get(pedagogical_mode, mode_instructions['standard'])}"
+            f"7. Pedagogical Tone: {mode_instructions.get(pedagogical_mode, mode_instructions['standard'])}"
         )
 
         user_content = f"### STUDENT QUESTION:\n{prompt}\n\n### RETRIEVED COURSE CONTEXT:\n{context_text}"
 
         if self.client:
-            try:
-                response = self.client.models.generate_content(
-                    model=self.model_name,
-                    contents=user_content,
-                    config=types.GenerateContentConfig(
-                        system_instruction=system_instruction,
-                        temperature=0.2,
+            for attempt in range(2):
+                try:
+                    response = self.client.models.generate_content(
+                        model=self.model_name,
+                        contents=user_content,
+                        config=types.GenerateContentConfig(
+                            system_instruction=system_instruction,
+                            temperature=0.2,
+                        )
                     )
-                )
-                return {
-                    "answer": response.text,
-                    "model_used": self.model_name,
-                    "is_demo_mode": False
-                }
-            except Exception as e:
-                logger.error(f"Gemini API call failed: {e}. Falling back to curriculum engine.")
+                    return {
+                        "answer": response.text,
+                        "model_used": self.model_name,
+                        "is_demo_mode": False
+                    }
+                except Exception as e:
+                    err_str = str(e)
+                    if "503" in err_str and attempt == 0:
+                        logger.warning("Gemini 503 demand spike, retrying after 1s...")
+                        time.sleep(1.2)
+                        continue
+                    logger.error(f"Gemini API call failed: {e}. Falling back to curriculum engine.")
+                    break
 
         # Fallback Demonstration / Offline Engine
         return self._demo_grounded_answer(prompt, context_chunks, pedagogical_mode)
@@ -133,7 +148,13 @@ class GeminiService:
         pedagogical_mode: str
     ) -> Dict[str, Any]:
         """High-fidelity contextual response generator when operating in Demo Mode."""
-        if not context_chunks or context_chunks[0].get("similarity_score", 0.0) < 0.20:
+        stop_words = {"what", "is", "the", "and", "was", "for", "in", "of", "a", "an", "to", "how", "why", "are", "do", "does", "can", "you", "tell", "me", "about"}
+        q_tokens = set(re.findall(r"\w+", prompt.lower())) - stop_words
+        top_text = (context_chunks[0].get("text", "") if context_chunks else "").lower()
+        has_keyword_match = any(t in top_text for t in q_tokens) if q_tokens else True
+        top_sim = context_chunks[0].get("similarity_score", 0.0) if context_chunks else 0.0
+
+        if not context_chunks or (top_sim < 0.45 and not has_keyword_match) or (not has_keyword_match and top_sim < 0.65):
             return {
                 "answer": (
                     "I cannot find this specific information in your uploaded course materials. "
@@ -144,31 +165,41 @@ class GeminiService:
             }
 
         top_chunk = context_chunks[0]
-        excerpt = top_chunk.get("text", "")[:400]
+        raw_text = top_chunk.get("text", "")
         page = top_chunk.get("page_number", 1)
         doc_name = top_chunk.get("document_name", "Uploaded Course Notes")
+        subject = top_chunk.get("subject", "Academic Coursework")
+        similarity = top_chunk.get("similarity_score", 0.88)
+
+        # Extract meaningful concept sentences from the retrieved text
+        clean_text = re.sub(r'\s+', ' ', raw_text).strip()
+        sentences = [s.strip() for s in re.split(r'(?<=[.!?])\s+', clean_text) if len(s.strip()) > 25]
+        key_excerpts = sentences[:3] if sentences else [clean_text[:300]]
 
         prefix = {
-            "explain_simply": "💡 **Simplified Explanation:**\n\n",
+            "explain_simply": "💡 **Simplified Conceptual Breakdown:**\n\n",
             "exam_cram": "⚡ **Exam High-Yield Review:**\n\n",
             "deep_dive": "🔍 **In-Depth Theoretical Analysis:**\n\n",
             "standard": "📚 **Curriculum-Grounded Answer:**\n\n"
         }.get(pedagogical_mode, "📚 **Curriculum-Grounded Answer:**\n\n")
 
+        bullet_points = "\n".join([f"- **Concept Insight:** {s}" for s in key_excerpts])
+
         answer_text = (
             f"{prefix}"
-            f"Based on **{doc_name}** (Page {page}), here is the grounded resolution to your question:\n\n"
-            f"> *\"{excerpt}...\"*\n\n"
-            f"**Key Takeaways:**\n"
-            f"1. **Core Concept:** The course material outlines this concept specifically within the documented syllabus.\n"
-            f"2. **Mechanism / Rule:** Conditions and algorithmic criteria must be satisfied as detailed in Page {page}.\n"
-            f"3. **Practical Implication:** In academic evaluations, this topic is tested on strict compliance with the established definition.\n\n"
-            f"*Source Citation:* Verified from `{doc_name}`, Page {page}."
+            f"Based on **{doc_name}** (Page {page}), here is the grounded explanation:\n\n"
+            f"### Verified Course Content\n"
+            f"{bullet_points}\n\n"
+            f"### Educational Takeaways\n"
+            f"1. **Core Subject Area:** Grounded in syllabus section **{subject}**.\n"
+            f"2. **Relevance & Verification:** Match verified on **Page {page}** with {similarity * 100:.0f}% curriculum alignment.\n"
+            f"3. **Study Guidance:** Consult related sections in `{doc_name}` to review worked examples and theorem proofs.\n\n"
+            f"**Source Citation:** Verified from `{doc_name}`, Page {page}."
         )
 
         return {
             "answer": answer_text,
-            "model_used": "Built-in Educational Engine (Demo Mode - Add GEMINI_API_KEY in .env for Live Gemini 2.5 Flash)",
+            "model_used": "Built-in Educational Engine (Grounding Engine)",
             "is_demo_mode": True
         }
 

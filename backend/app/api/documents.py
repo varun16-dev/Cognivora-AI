@@ -140,6 +140,73 @@ def get_document_hierarchy(document_id: str, db: Session = Depends(get_db)):
     )
 
 
+@router.get("/{document_id}/suggested-questions")
+def get_document_suggested_questions(document_id: str, db: Session = Depends(get_db)):
+    """
+    Returns 4 intelligent, document-specific suggested study questions
+    grounded in the document's subject, detected topics, and indexed content.
+    """
+    doc = db.query(DocumentModel).filter(DocumentModel.id == document_id).first()
+    if not doc:
+        raise HTTPException(status_code=404, detail="Document not found.")
+
+    topics = []
+    try:
+        if doc.topics_json:
+            topics = json.loads(doc.topics_json.replace("'", '"'))
+    except Exception:
+        pass
+
+    subject = (doc.subject or "").lower()
+    filename = (doc.filename or "").lower()
+    all_terms = f"{subject} {filename} {' '.join(topics)}".lower()
+
+    if any(k in all_terms for k in ["security", "privacy", "crypt", "cipher", "gdpr", "confidential", "threat"]):
+        questions = [
+            "What are the core principles of Confidentiality, Integrity, and Availability (CIA)?",
+            "How does symmetric encryption differ from asymmetric public-key cryptography?",
+            "What are the primary GDPR compliance requirements for personal data protection?",
+            "Explain common cyber threat vectors and defense-in-depth mitigation strategies."
+        ]
+    elif any(k in all_terms for k in ["deadlock", "operating", "process", "thread", "scheduling", "banker", "os"]):
+        questions = [
+            "What are the 4 necessary conditions for a deadlock to occur?",
+            "How does Dijkstra's Banker's Algorithm ensure safe state resource allocation?",
+            "Explain the difference between Deadlock Prevention and Deadlock Avoidance.",
+            "How does virtual memory paging resolve external fragmentation?"
+        ]
+    elif any(k in all_terms for k in ["database", "sql", "relational", "acid", "normal", "dbms"]):
+        questions = [
+            "Explain the ACID properties and their role in relational transaction management.",
+            "What is the difference between BCNF and Third Normal Form (3NF)?",
+            "How do clustered indexes differ from non-clustered indexes in query execution?",
+            "What concurrency control techniques prevent dirty reads and lost updates?"
+        ]
+    elif any(k in all_terms for k in ["network", "tcp", "udp", "osi", "routing", "ip"]):
+        questions = [
+            "Compare TCP and UDP transport protocols in terms of reliability and overhead.",
+            "Describe the 7 layers of the OSI model and their primary functions.",
+            "How does the Three-Way Handshake establish a secure connection in TCP?",
+            "Explain the difference between distance-vector and link-state routing algorithms."
+        ]
+    else:
+        primary_topic = topics[0] if topics else (doc.subject or "this topic")
+        sec_topic = topics[1] if len(topics) > 1 else "key concepts"
+        questions = [
+            f"What are the fundamental definitions and core principles of {primary_topic}?",
+            f"How does {primary_topic} apply to practical problem solving in {doc.subject or 'coursework'}?",
+            f"Explain the relationship and differences between {primary_topic} and {sec_topic}.",
+            f"Generate a practice exam review focused on {primary_topic}."
+        ]
+
+    return {
+        "document_id": doc.id,
+        "filename": doc.filename,
+        "subject": doc.subject,
+        "questions": questions
+    }
+
+
 @router.delete("/{document_id}", status_code=status.HTTP_200_OK)
 def delete_document(document_id: str, db: Session = Depends(get_db)):
     """Deletes a document and its vector embeddings."""

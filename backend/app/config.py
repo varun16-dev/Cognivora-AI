@@ -41,9 +41,9 @@ class Settings(BaseSettings):
 
     # AI & Gemini Configuration
     GEMINI_API_KEY: str = os.getenv("GEMINI_API_KEY", "")
-    PRIMARY_MODEL: str = "gemini-2.5-flash"
-    FAST_GENERATION_MODEL: str = "gemini-2.5-flash"
-    EMBEDDING_MODEL: str = "text-embedding-004"
+    PRIMARY_MODEL: str = "gemini-3.5-flash"
+    FAST_GENERATION_MODEL: str = "gemini-3.5-flash"
+    EMBEDDING_MODEL: str = "gemini-embedding-001"
 
     # Upload constraints
     MAX_FILE_SIZE_MB: int = 25

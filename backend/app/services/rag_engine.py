@@ -17,26 +17,41 @@ class FastCurriculumEmbedder(chromadb.EmbeddingFunction):
     High-speed, zero-dependency 384-dimensional normalized vector embedder.
     Works offline with zero external downloads, providing immediate deterministic
     cosine similarity for educational curriculum text.
-    If Gemini API key is configured, uses Gemini text-embedding-004.
+    If Gemini API key is configured, uses Gemini gemini-embedding-001 with 384 dimensions.
     """
 
     def __init__(self, dim: int = 384):
         self.dim = dim
 
+    def name(self) -> str:
+        return "FastCurriculumEmbedder"
+
     def __call__(self, input: Documents) -> Embeddings:
         # Check if Gemini live embeddings can be used
         if gemini_service.is_live() and hasattr(gemini_service.client, "models"):
             try:
+                from google.genai import types
                 embeddings = []
-                for doc in input:
+                batch_size = 16
+                for i in range(0, len(input), batch_size):
+                    batch = [d[:2048] for d in input[i:i + batch_size]]
                     res = gemini_service.client.models.embed_content(
                         model=settings.EMBEDDING_MODEL,
-                        contents=doc[:2048]
+                        contents=batch,
+                        config=types.EmbedContentConfig(output_dimensionality=self.dim)
                     )
-                    if hasattr(res, "embedding") and hasattr(res.embedding, "values"):
-                        embeddings.append(res.embedding.values[:self.dim])
-                    elif hasattr(res, "embeddings") and res.embeddings:
-                        embeddings.append(res.embeddings[0].values[:self.dim])
+                    raw_embs = []
+                    if hasattr(res, "embeddings") and res.embeddings:
+                        raw_embs = [e.values[:self.dim] for e in res.embeddings]
+                    elif hasattr(res, "embedding") and hasattr(res.embedding, "values"):
+                        raw_embs = [res.embedding.values[:self.dim]]
+
+                    for vec in raw_embs:
+                        norm = math.sqrt(sum(v * v for v in vec))
+                        if norm > 1e-9:
+                            vec = [v / norm for v in vec]
+                        embeddings.append(vec)
+
                 if len(embeddings) == len(input):
                     return embeddings
             except Exception as e:
@@ -87,11 +102,26 @@ class RAGEngine:
             self.chroma_client = chromadb.PersistentClient(
                 path=settings.CHROMA_PERSIST_DIRECTORY
             )
-            self.collection = self.chroma_client.get_or_create_collection(
-                name=settings.CHROMA_COLLECTION_NAME,
-                embedding_function=self.embedder,
-                metadata={"hnsw:space": "cosine"}
-            )
+            try:
+                self.collection = self.chroma_client.get_or_create_collection(
+                    name=settings.CHROMA_COLLECTION_NAME,
+                    embedding_function=self.embedder,
+                    metadata={"hnsw:space": "cosine"}
+                )
+            except Exception as ef_err:
+                logger.info(f"Connecting to existing collection: {ef_err}")
+                try:
+                    self.collection = self.chroma_client.get_collection(
+                        name=settings.CHROMA_COLLECTION_NAME,
+                        embedding_function=self.embedder
+                    )
+                except Exception:
+                    self.chroma_client.delete_collection(name=settings.CHROMA_COLLECTION_NAME)
+                    self.collection = self.chroma_client.create_collection(
+                        name=settings.CHROMA_COLLECTION_NAME,
+                        embedding_function=self.embedder,
+                        metadata={"hnsw:space": "cosine"}
+                    )
             logger.info("ChromaDB vector store connected with FastCurriculumEmbedder.")
         except Exception as e:
             logger.warning(f"Could not initialize ChromaDB client: {e}. In-memory vector store active.")

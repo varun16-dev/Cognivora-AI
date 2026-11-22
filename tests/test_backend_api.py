@@ -266,3 +266,18 @@ def test_export_quiz_and_summary_endpoints():
     assert "attachment" in export_sum_res.headers["Content-Disposition"]
     assert "## Summary Notes" in export_sum_res.text
     print("✓ Quiz and Summary export endpoints verified.")
+
+
+def test_document_suggested_questions_endpoint():
+    """Verify document-specific suggested study questions endpoint."""
+    docs_res = client.get("/api/documents")
+    assert docs_res.status_code == 200
+    doc_id = docs_res.json()[0]["id"]
+
+    res = client.get(f"/api/documents/{doc_id}/suggested-questions")
+    assert res.status_code == 200
+    data = res.json()
+    assert "questions" in data
+    assert isinstance(data["questions"], list)
+    assert len(data["questions"]) >= 3
+    print(f"✓ Document suggested questions verified: {len(data['questions'])} questions returned.")

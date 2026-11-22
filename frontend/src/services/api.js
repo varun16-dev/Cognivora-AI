@@ -53,6 +53,7 @@ export const api = {
       body: formData,
     }),
   getDocumentHierarchy: (id) => request(`/documents/${id}/hierarchy`),
+  getDocumentSuggestedQuestions: (id) => request(`/documents/${id}/suggested-questions`),
   deleteDocument: (id) =>
     request(`/documents/${id}`, {
       method: "DELETE",
