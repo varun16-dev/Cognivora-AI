@@ -26,6 +26,13 @@ const summaryModes = [
   { id: 'exam_notes', name: '📝 Exam Cram', desc: 'Formulas, definitions, and pitfalls' },
 ];
 
+const cleanTopicString = (t) => {
+  if (!t) return '';
+  return t
+    .replace(/^[\s#\-\u2013\u2014\*\•\d\.\/:]*(?:Module|Chapter|Unit|Section)?[\s\-\u2013\u2014\d:\.]*/gi, '')
+    .trim();
+};
+
 export default function Summaries() {
   const navigate = useNavigate();
   const [documents, setDocuments] = useState([]);
@@ -44,10 +51,10 @@ export default function Summaries() {
         setDocuments(docs);
         if (docs.length > 0) {
           setSelectedDocId(docs[0].id);
-          const initialTopic = (docs[0].topics && docs[0].topics.length > 0 && docs[0].topics[0] !== 'General')
+          const rawTopic = (docs[0].topics && docs[0].topics.length > 0 && !docs[0].topics[0].toLowerCase().includes('general'))
             ? docs[0].topics[0]
             : (docs[0].subject || 'Core Concepts');
-          setTopic(initialTopic);
+          setTopic(cleanTopicString(rawTopic) || 'Core Concepts');
         }
       })
       .catch((err) => console.log('Error fetching docs for summaries:', err));
@@ -92,10 +99,11 @@ export default function Summaries() {
 
   const handleSendToAudio = () => {
     if (!activeSummary) return;
+    const cleanTitle = cleanTopicString(activeSummary.topic || activeSummary.title) || 'Audio Lesson';
     navigate('/audio', {
       state: {
         text: activeSummary.content,
-        title: activeSummary.title
+        title: cleanTitle
       }
     });
   };

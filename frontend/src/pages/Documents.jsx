@@ -259,14 +259,17 @@ export default function Documents() {
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex flex-wrap gap-1 max-w-sm">
-                        {doc.topics.slice(0, 3).map((t, idx) => (
-                          <span
-                            key={idx}
-                            className="px-2 py-0.5 rounded text-[11px] bg-violet-50 text-violet-700 font-medium"
-                          >
-                            {t}
-                          </span>
-                        ))}
+                        {doc.topics.slice(0, 3).map((t, idx) => {
+                          const cleanT = t.replace(/^[\s#\-\u2013\u2014\*\•\d\.\/:]*(?:Module|Chapter|Unit|Section)?[\s\-\u2013\u2014\d:\.]*/gi, '').trim() || t;
+                          return (
+                            <span
+                              key={idx}
+                              className="px-2 py-0.5 rounded text-[11px] bg-violet-50 text-violet-700 font-medium"
+                            >
+                              {cleanT}
+                            </span>
+                          );
+                        })}
                         {doc.topics.length > 3 && (
                           <span className="text-[10px] text-slate-400 self-center">
                             +{doc.topics.length - 3} more

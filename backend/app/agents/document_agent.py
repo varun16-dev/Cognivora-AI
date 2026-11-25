@@ -38,7 +38,7 @@ class DocumentAgent:
             pages = DocumentParser.extract_text_from_file(file_path)
 
             # 2. Extract topics & subject
-            subject, topics = DocumentParser.extract_topics_and_subject(pages)
+            subject, topics = DocumentParser.extract_topics_and_subject(pages, filename=original_filename)
 
             # 3. Semantic chunking
             chunks = DocumentParser.semantic_chunk_pages(pages)
@@ -52,6 +52,12 @@ class DocumentAgent:
             )
 
             # 5. Persist Document record
+            doc_summary = (
+                f"{subject} course material covering " +
+                (", ".join(topics[:3]) if topics else "core academic concepts") +
+                f". Contains {len(pages)} pages and {indexed_count} indexed study sections."
+            )
+
             doc_record = DocumentModel(
                 id=doc_id,
                 filename=original_filename,
@@ -60,7 +66,7 @@ class DocumentAgent:
                 subject=subject,
                 chunk_count=indexed_count,
                 topics_json=json.dumps(topics),
-                summary=f"Processed academic document containing {len(pages)} pages and {indexed_count} indexed chunks.",
+                summary=doc_summary,
                 processing_status="processed"
             )
             db.add(doc_record)

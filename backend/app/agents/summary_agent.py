@@ -27,6 +27,14 @@ class SummaryAgent:
         """
         Synthesizes curricular summaries formatted in structured Markdown.
         """
+        import re
+        topic = re.sub(
+            r"^[\s#\-\–\—\*\•\d\.\/:]*(?:Module|Chapter|Unit|Section)?[\s\-\–\—\d:\.]*",
+            "",
+            topic,
+            flags=re.IGNORECASE
+        ).strip() or topic
+
         logger.info(f"[SummaryAgent] Generating '{mode}' summary for '{topic}' in '{document_name}'")
 
         chunks = rag_engine.retrieve_relevant_chunks(
@@ -100,21 +108,49 @@ class SummaryAgent:
     @staticmethod
     def _generate_fallback_summary(chunks: List[Dict[str, Any]], topic: str, mode: str, doc_name: str) -> tuple[str, List[str]]:
         import re
+
+        clean_topic = re.sub(
+            r"^[\s#\-\–\—\*\•\d\.\/:]*(?:Module|Chapter|Unit|Section)?[\s\-\–\—\d:\.]*",
+            "",
+            topic,
+            flags=re.IGNORECASE
+        ).strip() or topic
+
         sentences = []
         for c in chunks:
             text = c.get("text", "")
             raw = re.split(r"(?<=[.!?])\s+|\n{2,}", text)
             for s in raw:
-                s = s.strip()
-                if 25 <= len(s) <= 220 and not s.startswith(("#", "-", "*", "http")):
-                    sentences.append(s)
+                cleaned = re.sub(r"\s+", " ", s).strip()
+                # Exclude slide headers, author names, course identifiers, or fragments
+                if re.search(r"\b(Dr\.|Prof\.|Professor|Prepared by|Module\s*[\-–—\d]|Unit\s*\d+|Chapter\s*\d+|BAD\d+|BAI\d+|Data Security and Privacy)\b", cleaned, re.IGNORECASE):
+                    continue
+                # Require complete sentence structure
+                if len(cleaned.split()) >= 6 and (cleaned.endswith((".", "!", "?")) or len(cleaned) >= 50):
+                    if cleaned not in sentences and not cleaned.startswith(("#", "-", "*", "http")):
+                        sentences.append(cleaned)
 
-        key_points = sentences[:5] if sentences else [f"Review core principles of {topic} in {doc_name}."]
+        if len(sentences) >= 6:
+            overview_sentences = sentences[:3]
+            key_point_sentences = sentences[3:8]
+        elif len(sentences) >= 3:
+            overview_sentences = sentences[:2]
+            key_point_sentences = sentences[2:]
+        elif sentences:
+            overview_sentences = sentences
+            key_point_sentences = [f"Primary takeaway: {s}" for s in sentences]
+        else:
+            overview_sentences = [f"This academic lecture material focuses on the foundational principles, design criteria, and architectural standards for {clean_topic}."]
+            key_point_sentences = [
+                f"Understand standard protocols and regulatory requirements for {clean_topic}.",
+                f"Evaluate operational security trade-offs as detailed in {doc_name}."
+            ]
 
-        summary_body = "\n\n".join(sentences[:4]) if sentences else f"Detailed study material for {topic} derived from {doc_name}."
+        summary_body = "\n\n".join(overview_sentences)
+        key_points = key_point_sentences
 
         content = (
-            f"# {topic}: Academic Summary\n\n"
+            f"# {clean_topic}: Academic Summary\n\n"
             f"**Source Document:** {doc_name}\n\n"
             f"### Overview & Key Concepts\n"
             f"{summary_body}\n\n"

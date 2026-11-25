@@ -15,36 +15,163 @@ import { api } from '../services/api';
 
 const extractCleanTitle = (doc) => {
   if (!doc) return 'Audio Lesson';
-  if (doc.topics && doc.topics.length > 0 && doc.topics[0] !== 'General' && doc.topics[0].length > 3) {
-    return doc.topics[0];
+
+  // 1. Check doc.topics for non-generic topics
+  if (doc.topics && Array.isArray(doc.topics)) {
+    for (const t of doc.topics) {
+      if (!t || typeof t !== 'string') continue;
+      const cleaned = t
+        .replace(/^[\s#\-\u2013\u2014\*\•\d\.\/:]*(?:Module|Chapter|Unit|Section)?[\s\-\u2013\u2014\d:\.]*/gi, '')
+        .trim();
+      const lower = cleaned.toLowerCase();
+      if (
+        cleaned.length > 3 &&
+        !lower.includes('general studies') &&
+        !lower.startsWith('general') &&
+        !lower.includes('course material') &&
+        !lower.includes('lecture notes')
+      ) {
+        return cleaned;
+      }
+    }
   }
-  if (doc.subject && doc.subject !== 'General Studies' && doc.subject.trim().length > 2) {
-    return doc.subject;
+
+  // 2. Check doc.subject if specific
+  if (doc.subject && typeof doc.subject === 'string') {
+    const s = doc.subject.trim();
+    const sLower = s.toLowerCase();
+    if (s.length > 2 && sLower !== 'general studies' && sLower !== 'general' && sLower !== 'unknown') {
+      return s;
+    }
   }
+
+  // 3. Fallback to clean filename
   let name = doc.filename || '';
   name = name.replace(/\.(pdf|docx|txt)$/i, '');
-  name = name.replace(/^(Lecture\s*Material|LectureNotes|Lecture|Unit\s*\d+|Module\s*\d+|BAD\d+|BAI\d+|[A-Z]{2,4}\d{3,})[_-\s]*/gi, '');
-  name = name.replace(/Prepared\s+by\s+.*$/i, '');
-  name = name.replace(/[_]/g, ' ').trim();
-  return name || doc.filename;
+  // Strip leading prefixes like Lecture Material_BAI701_, LectureNotes_BAD703_, etc.
+  name = name.replace(/^(?:(?:Lecture\s*Material|LectureNotes|Lecture|Unit|Module|Section|Part)[\s\d\-–—]*|[A-Z]{2,4}\d{3,}[_\s\-–—]*)+/gi, '');
+  // Strip author signatures like Prepared by Prof. Sathiya or Dr. Sivaprakash
+  name = name.replace(/(?:Prepared\s+by|Dr\.|Prof\.|Professor)[\s\S]*$/gi, '');
+  name = name.replace(/Part[\s_-]*\d+$/gi, '');
+  name = name.replace(/[_\-]+/g, ' ').trim();
+
+  return name || doc.filename || 'Audio Lesson';
+};
+
+const formatForAudioLesson = (rawText, cleanTitle = '') => {
+  if (!rawText || !rawText.trim()) return '';
+
+  let text = rawText;
+
+  // 1. Remove slide header blocks and metadata lines
+  text = text.replace(/\b(?:BAD|BAI|[A-Z]{2,4})\d{3,4}[\s\S]*?(?:Dr\.|Prof\.|Professor)\b\s*/gi, '');
+  text = text.replace(/^[ \t]*[-*•]?\s*(?:BAD|BAI|[A-Z]{2,4})\d{3,4}[^\n]*$/gmi, '');
+  text = text.replace(/^[ \t]*[-*•]?\s*(?:Dr\.|Prof\.|Professor)[^\n]*$/gmi, '');
+  text = text.replace(/^[ \t]*[-*•]?\s*Module\s*[\-\u2013\u2014\d:\.]*$/gmi, '');
+  text = text.replace(/^[ \t]*\*{0,2}(?:Source\s+)?Document:\*{0,2}[^\n]*$/gmi, '');
+
+  // 2. Main title: single #
+  text = text.replace(/^#\s+[\-\u2013\u2014\s\d:\.]*(?:Module|Chapter|Unit|Section)?[\s\-\u2013\u2014\d:\.]*(.*?)(?::\s*Academic Summary|:\s*Summary)?$/gmi, (m, t) => {
+    const title = t.trim() || cleanTitle || 'Audio Study Lesson';
+    return `${title} — Spoken Audio Study Lesson.\n\n`;
+  });
+
+  // 3. Subheadings with clean trailing newlines
+  text = text.replace(/^###?\s*Overview\s*(?:&|and)\s*Key\s*Concepts\s*:?/gmi, 'Overview and Key Concepts:\n\n');
+  text = text.replace(/^###?\s*High-Yield\s*Key\s*Points\s*:?/gmi, 'Key Takeaways and Focus Points:\n\n');
+  text = text.replace(/^###?\s*Key\s*Takeaways\s*:?/gmi, 'Key Takeaways and Focus Points:\n\n');
+  text = text.replace(/^#{2,6}\s*(.*?):?$/gmi, '$1:\n\n');
+
+  // 4. Strip inline formatting
+  text = text.replace(/\*\*([^*]+)\*\*/g, '$1');
+  text = text.replace(/\*([^*]+)\*/g, '$1');
+  text = text.replace(/__([^_]+)__/g, '$1');
+  text = text.replace(/`([^`]+)`/g, '$1');
+
+  // 5. Clean bullets
+  text = text.replace(/^[ \t]*[-*•]\s+/gmi, '• ');
+
+  const rawParagraphs = text.split(/\n{2,}/);
+  const cleaned = [];
+  const seen = new Set();
+
+  for (const p of rawParagraphs) {
+    const lines = p.split('\n').map((l) => l.trim()).filter(Boolean);
+    if (lines.length === 0) continue;
+
+    const bulletLines = lines.filter((l) => l.startsWith('• '));
+    const proseLines = lines.filter((l) => !l.startsWith('• '));
+
+    if (proseLines.length > 0) {
+      const filteredProse = proseLines.filter((l) => {
+        if (/\b(?:BAD|BAI|[A-Z]{2,4})\d{3,4}\b/i.test(l)) return false;
+        if (/^(?:Dr\.|Prof\.|Professor)\s*$/i.test(l)) return false;
+        if (/^Module\s*[\-\u2013\u2014\d:\.]*$/i.test(l)) return false;
+        return true;
+      });
+
+      if (filteredProse.length > 0) {
+        const fullPara = filteredProse.join(' ');
+        const lower = fullPara.toLowerCase();
+        if (lower.length > 30) {
+          seen.add(lower);
+        }
+        cleaned.push(fullPara);
+      }
+    }
+
+    if (bulletLines.length > 0) {
+      const keptBullets = [];
+      for (const b of bulletLines) {
+        const core = b.substring(2).trim();
+        if (/\b(?:BAD|BAI|[A-Z]{2,4})\d{3,4}\b/i.test(core)) continue;
+        if (/^(?:Dr\.|Prof\.|Professor)\s*$/i.test(core)) continue;
+        const lower = core.toLowerCase();
+        // Check if this bullet was already covered in the prose overview
+        let duplicate = false;
+        if (seen.has(lower)) duplicate = true;
+        for (const prev of seen) {
+          if (prev.includes(lower) || lower.includes(prev)) {
+            duplicate = true;
+            break;
+          }
+        }
+        if (duplicate) continue;
+        seen.add(lower);
+        keptBullets.push(`• ${core}`);
+      }
+      if (keptBullets.length > 0) {
+        cleaned.push(keptBullets.join('\n'));
+      }
+    }
+  }
+
+  let result = cleaned.join('\n\n').trim();
+
+  // If text does not start with a clean title header, prepend one
+  if (cleanTitle && !result.toLowerCase().startsWith(cleanTitle.toLowerCase())) {
+    result = `${cleanTitle} — Spoken Audio Study Lesson.\n\n${result}`;
+  }
+
+  return result;
 };
 
 const buildDefaultScript = (doc) => {
   if (!doc) return '';
   const cleanTitle = extractCleanTitle(doc);
-  const topicsList = (doc.topics && doc.topics.length > 0 && doc.topics[0] !== 'General')
-    ? doc.topics.join(', ')
-    : 'Core theoretical concepts, mathematical formulations, and applied frameworks';
+  const topicsList = (doc.topics && doc.topics.length > 0 && !doc.topics[0].toLowerCase().includes('general'))
+    ? doc.topics.map(t => t.replace(/^[\s#\-\u2013\u2014\*\•\d\.\/:]*(?:Module|Chapter|Unit|Section)?[\s\-\u2013\u2014\d:\.]*/gi, '').trim()).filter(Boolean).slice(0, 4).join(', ')
+    : 'theoretical foundations, architectural mechanisms, and practical methodologies';
 
   return (
-    `${cleanTitle} — Comprehensive Audio Study Overview.\n\n` +
+    `${cleanTitle} — Spoken Audio Study Lesson.\n\n` +
     `Welcome to the audio study session for ${cleanTitle}.\n\n` +
-    `This course material explores the following core topics:\n${topicsList}.\n\n` +
+    `This lecture explores the fundamental principles and technical mechanisms outlined in your course materials, focusing on: ${topicsList}.\n\n` +
     `Key Focus Areas for Review:\n` +
-    `• Theoretical foundations and algorithmic criteria\n` +
-    `• Operational mechanisms and sequence modeling\n` +
-    `• Practical implementation trade-offs and performance analysis\n\n` +
-    `Click 'Generate In-Depth AI Lesson' above to synthesize a full multi-page lecture digest, or edit this script directly before listening.`
+    `• Theoretical foundations, formal criteria, and architectural principles.\n` +
+    `• Operational workflows, algorithmic procedures, and sequence analysis.\n` +
+    `• Practical implementation trade-offs, security considerations, and system performance.\n\n` +
+    `To generate a comprehensive, in-depth audio lecture synthesized directly from your slides, click 'Generate Full In-Depth Lesson' above, or edit this script directly before listening.`
   );
 };
 
@@ -68,8 +195,10 @@ export default function AudioLearning() {
   useEffect(() => {
     // If navigated from Summaries page with preloaded text
     if (location.state?.text) {
-      setText(location.state.text);
-      if (location.state.title) setTitle(location.state.title);
+      const initialTitle = location.state.title || 'Audio Lesson';
+      const cleanTitle = initialTitle.replace(/^[\s#\-\u2013\u2014\*\•\d\.\/:]*(?:Module|Chapter|Unit|Section)?[\s\-\u2013\u2014\d:\.]*/gi, '').trim() || initialTitle;
+      setText(formatForAudioLesson(location.state.text, cleanTitle));
+      setTitle(cleanTitle.endsWith('Audio Lesson') ? cleanTitle : `${cleanTitle} — Audio Lesson`);
     } else {
       // Check for uploaded documents
       api.getDocuments()
@@ -86,7 +215,7 @@ export default function AudioLearning() {
               const summaries = await api.getSummaries();
               const matchingSummary = summaries.find((s) => s.document_id === first.id);
               if (matchingSummary && matchingSummary.content && matchingSummary.content.trim()) {
-                setText(matchingSummary.content);
+                setText(formatForAudioLesson(matchingSummary.content, cleanTitle));
                 return;
               }
             } catch (err) {
@@ -149,7 +278,7 @@ export default function AudioLearning() {
       const summaries = await api.getSummaries();
       const matchingSummary = summaries.find((s) => s.document_id === doc.id);
       if (matchingSummary && matchingSummary.content && matchingSummary.content.trim()) {
-        setText(matchingSummary.content);
+        setText(formatForAudioLesson(matchingSummary.content, cleanTitle));
       } else {
         setText(buildDefaultScript(doc));
       }
@@ -178,7 +307,7 @@ export default function AudioLearning() {
         mode: 'detailed'
       });
       if (res && res.content) {
-        setText(res.content);
+        setText(formatForAudioLesson(res.content, cleanTitle));
         setTitle(`${cleanTitle} — In-Depth Audio Lesson`);
       }
     } catch (err) {
@@ -200,7 +329,15 @@ export default function AudioLearning() {
 
     window.speechSynthesis.cancel();
 
-    const utterance = new SpeechSynthesisUtterance(text);
+    // Prepare clean speech text: remove bullet symbols and markdown artifacts so voice is fluent
+    const spokenText = text
+      .replace(/^[ \t]*•\s*/gmi, '')
+      .replace(/•/g, '')
+      .replace(/[#*_~`]/g, '')
+      .replace(/\s+/g, ' ')
+      .trim();
+
+    const utterance = new SpeechSynthesisUtterance(spokenText);
     utterance.rate = rate;
     utterance.pitch = pitch;
 

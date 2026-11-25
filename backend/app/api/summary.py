@@ -24,7 +24,9 @@ def generate_summary(
     """
     doc = db.query(DocumentModel).filter(DocumentModel.id == payload.document_id).first()
     doc_name = doc.filename if doc else "Course Materials"
-    topic = payload.topic or (doc.subject if doc else "Chapter Overview")
+    raw_topic = (payload.topic or "").strip() or (doc.subject if doc else "Chapter Overview")
+    import re
+    topic = re.sub(r"^[\s#\-\–\—\*\•\d\.\/:]*(?:Module|Chapter|Unit|Section)?[\s\-\–\—\d:\.]*", "", raw_topic, flags=re.IGNORECASE).strip() or raw_topic
 
     summary_record = SummaryAgent.generate_summary(
         document_id=payload.document_id,

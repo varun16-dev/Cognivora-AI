@@ -106,9 +106,9 @@ class DocumentParser:
         return pages
 
     @staticmethod
-    def extract_topics_and_subject(pages: List[Dict[str, Any]]) -> Tuple[str, List[str]]:
+    def extract_topics_and_subject(pages: List[Dict[str, Any]], filename: Optional[str] = None) -> Tuple[str, List[str]]:
         """
-        Extracts subject and syllabus topics from document headings and curriculum keywords.
+        Extracts subject and syllabus topics from document headings, curriculum keywords, and filename context.
         """
         all_text = "\n".join([p["text"] for p in pages])
         subject = "General Studies"
@@ -119,12 +119,30 @@ class DocumentParser:
         if subj_match:
             subject = subj_match.group(1).strip()
         else:
-            first_line = all_text.strip().split("\n")[0]
-            clean_title = re.sub(r"^[#\s\-\*]+", "", first_line).strip()
-            if "—" in clean_title:
-                subject = clean_title.split("—")[0].strip()
-            elif ":" in clean_title and len(clean_title.split(":")[0]) <= 35:
-                subject = clean_title.split(":")[0].strip()
+            # Check for academic course codes like BAD703- Data Security and Privacy or BAI701- Deep Learning
+            code_match = re.search(r"\b([A-Z]{2,4}\d{3,4})\s*[-–—:]\s*([^\n\r]{4,55})", all_text)
+            if code_match:
+                candidate = code_match.group(2).strip()
+                candidate = re.sub(r"\s*(?:Prepared\s+by|Dr\.|Prof\.|Professor)[\s\S]*$", "", candidate, flags=re.IGNORECASE).strip()
+                if len(candidate) > 3 and not re.search(r"\b(?:Module|Chapter|Unit|Section)\b", candidate, re.IGNORECASE):
+                    subject = candidate
+            else:
+                first_line = all_text.strip().split("\n")[0]
+                clean_title = re.sub(r"^[#\s\-\*]+", "", first_line).strip()
+                if "—" in clean_title:
+                    subject = clean_title.split("—")[0].strip()
+                elif ":" in clean_title and len(clean_title.split(":")[0]) <= 35:
+                    subject = clean_title.split(":")[0].strip()
+
+        # 1b. Fallback to extracting subject from filename if still generic
+        if (subject == "General Studies" or not subject.strip()) and filename:
+            fn_clean = re.sub(r"\.(pdf|docx|txt)$", "", filename, flags=re.IGNORECASE)
+            fn_parts = [p.strip() for p in re.split(r"[_\-–—]+", fn_clean) if p.strip()]
+            for part in fn_parts:
+                part_clean = re.sub(r"^(?:(?:Lecture\s*Material|LectureNotes|Lecture|Module|Chapter|Unit|Section|\d+|[A-Z]{2,4}\d{3,})[\s\d:]*)+", "", part, flags=re.IGNORECASE).strip()
+                if len(part_clean) > 4 and not re.search(r"^(?:Dr\.|Prof\.|Part\s*\d+|Prepared)", part_clean, re.IGNORECASE):
+                    subject = part_clean
+                    break
 
         # 2. Extract topics from headings (Markdown #, ##, ###, Chapter/Unit/Module, numbered items)
         raw_headings = re.findall(
@@ -141,8 +159,12 @@ class DocumentParser:
 
         for h in raw_headings:
             cleaned = h.strip()
-            cleaned = re.sub(r"^[#\-\*\•\d\.\s:]+", "", cleaned).strip()
-            cleaned = re.sub(r"^(?:Chapter|Unit|Module|Section)\s*(?:\d+)?[:\.\-]?\s*", "", cleaned, flags=re.IGNORECASE).strip()
+            # Remove leading bullets, numbers, hyphens, and en/em dashes
+            cleaned = re.sub(r"^[\s#\-\–\—\*\•\d\.\/:]+", "", cleaned).strip()
+            cleaned = re.sub(r"^(?:Chapter|Unit|Module|Section)\s*[\-\–\—\s\d:\.]*", "", cleaned, flags=re.IGNORECASE).strip()
+            cleaned = re.sub(r"^[\s#\-\–\—\*\•\d\.\/:]+", "", cleaned).strip()
+            # Remove instructor/author trailing signatures
+            cleaned = re.sub(r"\s*(?:Prepared\s+by|Dr\.|Prof\.|Professor)[\s\S]*$", "", cleaned, flags=re.IGNORECASE).strip()
 
             if ":" in cleaned:
                 prefix = cleaned.split(":", 1)[0].strip().lower()
@@ -158,6 +180,17 @@ class DocumentParser:
 
             if cleaned not in topics and len(cleaned) <= 80:
                 topics.append(cleaned)
+
+        # 2b. Extract module/topic from filename if fewer than 2 headings detected
+        if len(topics) < 2 and filename:
+            fn_clean = re.sub(r"\.(pdf|docx|txt)$", "", filename, flags=re.IGNORECASE)
+            mod_match = re.search(r"(?:Module|Chapter|Unit|Section)\s*[\-\–\—_]?\s*\d*[\-\–\—_:\s]+([A-Za-z0-9\s&,]{4,70})", fn_clean, re.IGNORECASE)
+            if mod_match:
+                extracted = mod_match.group(1).replace("_", " ").strip()
+                extracted = re.sub(r"Prepared\s*(?:by)?.*$", "", extracted, flags=re.IGNORECASE).strip()
+                extracted = re.sub(r"(?:Dr\.|Prof\.|Professor|Part\s*\d+).*$", "", extracted, flags=re.IGNORECASE).strip()
+                if extracted and len(extracted) > 3 and extracted not in topics:
+                    topics.insert(0, extracted)
 
         # 3. If fewer than 2 topics found from headings, extract key conceptual phrases
         if len(topics) < 2:
